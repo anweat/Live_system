@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+  MyBatis映射配置说明
+  本文件用于在不使用注解时，用XML配置SQL映射关系
+  由于我们使用@Mapper注解+SQL注解的方式，此文件为备选方案
+-->
+
+<mapper namespace="common.mapper.AudienceMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>
+
+<mapper namespace="common.mapper.LiveRoomMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>
+
+<mapper namespace="common.mapper.RechargeMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>
+
+<mapper namespace="common.mapper.UserMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>
+
+<mapper namespace="common.mapper.AnchorMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>
+
+<mapper namespace="common.mapper.CommissionRateMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>
+
+<mapper namespace="common.mapper.WithdrawalMapper">
+    <!-- 备选：如果使用XML配置而非注解 -->
+</mapper>

@@ -1,0 +1,115 @@
+spring:
+  # DataSource Configuration
+  datasource:
+    url: jdbc:mysql://db-service:3306/live_finance_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+
+  # Redis Configuration
+  redis:
+    host: ${REDIS_HOST:redis-service}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 2
+    timeout: 5000
+    jedis:
+      pool:
+        max-active: 50
+        max-idle: 20
+        min-idle: 10
+        max-wait: 2000
+
+  # Cloud Configuration
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:consul}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        enabled: true
+        instance-id: ${spring.application.name}:${HOSTNAME:${random.value}}
+        service-name: ${spring.application.name}
+        port: ${server.port}
+        prefer-ip-address: true
+        health-check-interval: 10s
+        health-check-path: /actuator/health
+        health-check-timeout: 3s
+        register: true
+
+# Feign Configuration
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 3000
+        readTimeout: 3000
+  httpclient:
+    enabled: true
+  compression:
+    request:
+      enabled: true
+    response:
+      enabled: true
+  hystrix:
+    enabled: true
+
+# Hystrix Configuration
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 8000
+      circuitBreaker:
+        enabled: true
+        requestVolumeThreshold: 5
+        sleepWindowInMilliseconds: 10000
+        errorThresholdPercentage: 50
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.liveroom.finance: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+
+# Finance Service Specific Configuration
+finance:
+  settlement:
+    cron: "0 */10 * * * ?"
+    batch-size: 1000
+  withdrawal:
+    min-amount: 1.00
+    max-amount: 99999.99
+  sync:
+    batch-size: 500
+    retry-count: 3

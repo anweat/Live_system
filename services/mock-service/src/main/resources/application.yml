@@ -1,0 +1,122 @@
+server:
+  port: 8090
+  servlet:
+    context-path: /mock
+
+spring:
+  application:
+    name: mock-service
+  
+  profiles:
+    active: dev
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/live_audience_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    hikari:
+      maximum-pool-size: 100        # 增加连接池以支持高并发
+      minimum-idle: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update               # 自动创建表结构
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        jdbc:
+          batch_size: 100            # 批量操作优化
+        order_inserts: true
+        order_updates: true
+
+  # 线程池配置（支持高并发）
+  task:
+    execution:
+      pool:
+        core-size: 50
+        max-size: 200
+        queue-capacity: 10000
+        keep-alive: 60s
+    scheduling:
+      pool:
+        size: 10
+
+# Feign Client Configuration
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+# Service URLs
+services:
+  anchor-service:
+    url: http://localhost:8081/anchor
+  audience-service:
+    url: http://localhost:8082/audience
+  finance-service:
+    url: http://localhost:8083/finance
+
+# Mock Service Configuration
+mock:
+  # Bot配置
+  bot:
+    name-prefix: "Bot_"
+    default-batch-size: 100          # 增加默认批次
+    max-batch-size: 5000             # 增加最大批次以支持大规模测试
+  
+  # 行为模拟配置
+  simulation:
+    enabled: true
+    # 进入直播间的间隔（毫秒）- 减少间隔提高吞吐量
+    enter-interval-min: 500
+    enter-interval-max: 2000
+    # 发送弹幕的间隔（毫秒）
+    message-interval-min: 2000
+    message-interval-max: 8000
+    # 打赏间隔（毫秒）
+    recharge-interval-min: 8000
+    recharge-interval-max: 20000
+    # 离开直播间的间隔（毫秒）
+    leave-interval-min: 20000
+    leave-interval-max: 60000
+  
+  # 随机数据配置
+  random:
+    # 观众性别分布（%）
+    gender-male-rate: 55
+    # 消费等级分布（%）
+    consumption-low-rate: 60
+    consumption-medium-rate: 30
+    consumption-high-rate: 10
+    # 打赏金额范围
+    recharge-min: 1.0
+    recharge-max: 1000.0
+    # 标签数量范围
+    tag-count-min: 1
+    tag-count-max: 5
+
+  # 批量测试配置
+  batch:
+    # 批量处理线程池大小
+    executor-pool-size: 50
+    # 批量处理队列容量
+    executor-queue-capacity: 10000
+    # 单次批量操作最大直播间数
+    max-live-rooms-per-batch: 500
+    # 单个直播间最大观众数
+    max-audience-per-room: 50000
+
+logging:
+  level:
+    root: INFO
+    com.liveroom.mock: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -1,0 +1,91 @@
+server:
+  port: 8084
+  servlet:
+    context-path: /data-analysis
+
+spring:
+  application:
+    name: data-analysis-service
+  
+  # 数据源配置 - DB1 (观众服务数据库)
+  datasource:
+    db1:
+      jdbc-url: jdbc:mysql://localhost:3306/live_audience_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      hikari:
+        maximum-pool-size: 20
+        minimum-idle: 5
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+    
+    # 数据源配置 - DB2 (财务分析数据库)
+    db2:
+      jdbc-url: jdbc:mysql://localhost:3306/live_finance_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      hikari:
+        maximum-pool-size: 20
+        minimum-idle: 5
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+  
+  # JPA配置
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    database: 3
+    timeout: 6000ms
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 5000ms
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.liveroom.analysis: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 分析服务配置
+analysis:
+  # 缓存过期时间配置(秒)
+  cache:
+    income-ttl: 3600         # 收入数据缓存1小时
+    portrait-ttl: 43200      # 画像数据缓存12小时
+    heatmap-ttl: 604800      # 热力图缓存7天
+    ranking-ttl: 1800        # 排行榜缓存30分钟
+    statistics-ttl: 86400    # 统计数据缓存24小时
+  
+  # 任务调度配置
+  schedule:
+    hourly-cron: "0 0 * * * ?"           # 每小时执行
+    daily-cron: "0 0 2 * * ?"            # 每天凌晨2点
+    weekly-cron: "0 0 5 ? * MON"         # 每周一凌晨5点
+    monthly-cron: "0 0 6 1 * ?"          # 每月1日凌晨6点
+  
+  # 查询限制
+  query:
+    max-days: 90             # 最多查询90天数据
+    default-limit: 10        # 默认返回10条
+    max-limit: 100           # 最多返回100条

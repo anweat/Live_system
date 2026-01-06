@@ -1,0 +1,9 @@
+
+# 项目排除路径
+/services/anchor-service/target/
+/services/audience-service/target/
+/services/common/target/
+/services/data-analysis-service/target/
+/services/db-service/target/
+/services/finance-service/target/
+/services/mock-service/target/

@@ -1,0 +1,107 @@
+spring:
+  # DataSource Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/live_finance_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # Redis Configuration
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 2
+    timeout: 5000
+    jedis:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 2000
+
+  # Cloud Configuration
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        enabled: true
+        instance-id: ${spring.application.name}:${random.value}
+        service-name: ${spring.application.name}
+        port: ${server.port}
+        prefer-ip-address: true
+        health-check-interval: 10s
+        health-check-path: /actuator/health
+        health-check-timeout: 3s
+        register: true
+
+# Feign Configuration
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 2000
+        readTimeout: 2000
+  httpclient:
+    enabled: true
+  compression:
+    request:
+      enabled: true
+    response:
+      enabled: true
+  hystrix:
+    enabled: true
+
+# Hystrix Configuration
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000
+      circuitBreaker:
+        enabled: true
+        requestVolumeThreshold: 3
+        sleepWindowInMilliseconds: 5000
+        errorThresholdPercentage: 50
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Finance Service Specific Configuration
+finance:
+  settlement:
+    cron: "0 */10 * * * ?"  # 每10分钟执行一次结算
+    batch-size: 1000
+  withdrawal:
+    min-amount: 1.00
+    max-amount: 99999.99
+  sync:
+    batch-size: 500
+    retry-count: 3

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: live-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_CHARSET: utf8mb4
+      TZ: 'Asia/Shanghai'
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+    networks:
+      - live-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 数据库服务应用
+  db-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: db-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_PRIMARY_URL: jdbc:mysql://mysql:3306/live_audience_db?serverTimezone=UTC&useSSL=false&characterEncoding=utf8mb4
+      SPRING_DATASOURCE_PRIMARY_USERNAME: root
+      SPRING_DATASOURCE_PRIMARY_PASSWORD: root
+      SPRING_DATASOURCE_SECONDARY_URL: jdbc:mysql://mysql:3306/live_finance_db?serverTimezone=UTC&useSSL=false&characterEncoding=utf8mb4
+      SPRING_DATASOURCE_SECONDARY_USERNAME: root
+      SPRING_DATASOURCE_SECONDARY_PASSWORD: root
+      TZ: 'Asia/Shanghai'
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - live-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  live-network:
+    driver: bridge

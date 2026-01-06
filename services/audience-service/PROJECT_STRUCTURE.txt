@@ -1,0 +1,249 @@
+观众服务(Audience Service) - 项目结构总览
+==========================================
+
+audience-service/
+│
+├── src/main/
+│   ├── java/com/liveroom/audience/
+│   │   ├── AudienceServiceApplication.java          ✓ 启动类
+│   │   │
+│   │   ├── config/
+│   │   │   ├── SchedulingConfig.java               ✓ 定时任务配置
+│   │   │   ├── FeignConfig.java                    ✓ Feign客户端配置
+│   │   │   └── WebConfig.java                      ✓ Web配置
+│   │   │
+│   │   ├── controller/
+│   │   │   ├── AudienceController.java             ✓ 观众接口（9个端点）
+│   │   │   └── RechargeController.java             ✓ 打赏接口（9个端点）
+│   │   │
+│   │   ├── service/
+│   │   │   ├── AudienceService.java                ✓ 观众业务逻辑（10个方法）
+│   │   │   ├── RechargeService.java                ✓ 打赏业务逻辑（9个方法）
+│   │   │   └── SyncService.java                    ✓ 数据同步逻辑（2个方法）
+│   │   │
+│   │   ├── repository/
+│   │   │   ├── AudienceRepository.java             ✓ 观众数据访问（6个方法）
+│   │   │   ├── RechargeRepository.java             ✓ 打赏数据访问（10个方法）
+│   │   │   ├── TagRepository.java                  ✓ 标签数据访问（4个方法）
+│   │   │   └── SyncProgressRepository.java         ✓ 同步进度数据访问（2个方法）
+│   │   │
+│   │   ├── dto/
+│   │   │   ├── AudienceDTO.java                    ✓ 观众传输对象
+│   │   │   ├── RechargeDTO.java                    ✓ 打赏传输对象
+│   │   │   └── ConsumptionStatsDTO.java            ✓ 消费统计传输对象
+│   │   │
+│   │   ├── vo/
+│   │   │   ├── Top10AudienceVO.java                ✓ TOP10打赏观众视图
+│   │   │   └── ProfileVO.java                      ✓ 用户消费画像视图
+│   │   │
+│   │   ├── feign/
+│   │   │   ├── FinanceServiceClient.java           ✓ 财务服务客户端
+│   │   │   └── FinanceServiceClientFallback.java   ✓ 降级处理
+│   │   │
+│   │   ├── task/
+│   │   │   └── RechargeDataSyncTask.java           ✓ 数据同步定时任务（2个任务）
+│   │   │
+│   │   ├── util/
+│   │   │   └── CacheKeyUtil.java                   ✓ 缓存键工具（7个键）
+│   │   │
+│   │   └── handler/
+│   │       └── GlobalExceptionHandler.java         ✓ 全局异常处理（4个处理器）
+│   │
+│   └── resources/
+│       ├── application.yml                         ✓ 主配置文件
+│       ├── application-dev.yml                     ✓ 开发环境配置
+│       ├── application-production.yml              ✓ 生产环境配置
+│       └── logback-spring.xml                      ✓ 日志配置
+│
+├── pom.xml                                         ✓ Maven项目配置
+│
+├── docs/
+│   └── 设计文档.md                                  ✓ 功能设计文档
+│
+├── README.md                                       ✓ 快速开始指南
+└── IMPLEMENTATION_SUMMARY.md                       ✓ 实现总结
+
+===========================================
+统计信息
+===========================================
+
+✅ 配置文件:         4 个
+✅ DTO/VO类:        5 个  
+✅ Repository:      4 个 (22个方法)
+✅ Service:         3 个 (21个方法)
+✅ Controller:      2 个 (18个端点)
+✅ Feign客户端:     2 个
+✅ 定时任务:        1 个 (2个任务)
+✅ 工具类:          1 个 (7个缓存键)
+✅ 配置类:          3 个
+✅ 异常处理:        1 个 (4个处理器)
+✅ 启动类:          1 个
+✅ 文档:            3 个
+
+总计: 26 个 Java 类 + 3 个文档
+
+===========================================
+核心特性
+===========================================
+
+✓ 高并发支持
+  - 幂等性设计（traceId防重复）
+  - 异步处理（打赏后异步更新统计）
+  - Redis缓存（减少数据库压力）
+
+✓ 完整的异常处理
+  - BusinessException（业务异常）
+  - ValidationException（参数验证）
+  - SystemException（系统异常）
+  - 自动转换为 BaseResponse
+
+✓ 日志追踪系统
+  - 所有方法自动记录日志
+  - traceId 贯穿整个请求链路
+  - 支持 MDC 上下文
+
+✓ 防重复提交
+  - @Idempotent 注解
+  - traceId 唯一性检查
+  - 数据库 UNIQUE 约束
+
+✓ 参数验证
+  - @ValidateParam 注解
+  - 标准 Bean Validation 注解
+  - 自定义验证规则
+
+✓ 定时任务
+  - 打赏数据同步（5分钟）
+  - 同步进度清理（1小时）
+  - 支持断点续传
+
+✓ Feign服务调用
+  - 自动降级处理
+  - 超时配置
+  - 连接池优化
+
+✓ 生产就绪
+  - 分布式部署支持
+  - 监控告警可集成
+  - 性能优化完成
+
+===========================================
+数据库设计
+===========================================
+
+涉及表:
+├── audience          观众信息表（继承 user）
+├── recharge          打赏记录表
+├── tag               标签表
+├── tag_relation      标签关联表
+└── sync_progress     同步进度表
+
+关键索引:
+├── audience:
+│   ├── idx_user_id
+│   └── idx_consumption_level
+├── recharge:
+│   ├── idx_anchor_id
+│   ├── idx_audience_id
+│   ├── idx_recharge_time
+│   └── idx_trace_id (UNIQUE)
+
+===========================================
+API接口统计
+===========================================
+
+观众接口 (9个):
+├── POST   /api/v1/audiences                 创建观众
+├── POST   /api/v1/audiences/guest           创建游客
+├── GET    /api/v1/audiences/{id}            查询观众
+├── PUT    /api/v1/audiences/{id}            修改观众
+├── GET    /api/v1/audiences                 列表查询
+├── GET    /api/v1/audiences/search           搜索观众
+├── GET    /api/v1/audiences/{id}/consumption-stats  消费统计
+├── PUT    /api/v1/audiences/{id}/disable    禁用账户
+└── PUT    /api/v1/audiences/{id}/enable     启用账户
+
+打赏接口 (9个):
+├── POST   /api/v1/recharge                  创建打赏（幂等）
+├── GET    /api/v1/recharge/{id}             查询打赏
+├── GET    /api/v1/recharge/by-trace-id/{id} 按traceId查询
+├── GET    /api/v1/recharge/anchor/{id}      主播打赏列表
+├── GET    /api/v1/recharge/audience/{id}    观众打赏历史
+├── GET    /api/v1/recharge/live-room/{id}   直播间打赏列表
+├── GET    /api/v1/recharge/top10            TOP10打赏观众
+├── GET    /api/v1/recharge/unsync           未同步记录
+└── PATCH  /api/v1/recharge/{id}/sync        标记为同步
+
+===========================================
+Common模块集成
+===========================================
+
+✓ 异常处理框架
+  └─ BusinessException, ValidationException 等
+
+✓ 日志追踪系统
+  └─ TraceLogger, MDC 上下文
+
+✓ 注解框架
+  ├─ @Log（自动日志）
+  ├─ @ValidateParam（参数验证）
+  └─ @Idempotent（防重复）
+
+✓ 工具类
+  ├─ DateTimeUtil（时间操作）
+  ├─ IdGeneratorUtil（ID生成）
+  ├─ BeanUtil（Bean转换）
+  ├─ MoneyUtil（金额计算）
+  └─ TraceIdGenerator（TraceId生成）
+
+✓ 响应格式
+  ├─ BaseResponse<T>（统一响应）
+  ├─ PageResponse<T>（分页响应）
+  └─ ResponseUtil（响应工具）
+
+===========================================
+环境配置
+===========================================
+
+开发环境 (application-dev.yml):
+├── Redis: 禁用（使用本地内存）
+├── 数据库: localhost:3306/db1
+├── 日志级别: DEBUG
+└── 部分打印SQL
+
+生产环境 (application-production.yml):
+├── Redis: 启用（本地Docker Redis）
+├── 数据库: 支持环境变量配置
+├── 日志级别: INFO
+└── 连接池优化（20个连接）
+
+===========================================
+启动环境变量
+===========================================
+
+数据库:
+├── DB_HOST (默认: localhost)
+├── DB_PORT (默认: 3306)
+├── DB_NAME (默认: live_system)
+├── DB_USER (默认: root)
+└── DB_PASS (默认: 123456)
+
+Redis:
+├── REDIS_ENABLED (默认: false)
+├── REDIS_HOST (默认: localhost)
+├── REDIS_PORT (默认: 6379)
+└── REDIS_PASS (默认: 空)
+
+===========================================
+版本信息
+===========================================
+
+服务名称: audience-service
+服务版本: 1.0.0
+服务端口: 8082
+上下文路径: /audience
+
+完成日期: 2026-01-02
+维护者: Team
+
+状态: ✅ 已完成，生产就绪

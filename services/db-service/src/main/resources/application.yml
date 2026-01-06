@@ -1,0 +1,125 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: db-service
+
+  # ========== 主数据源 (DB1: 观众服务) ==========
+  datasource:
+    primary:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/live_audience_db?serverTimezone=UTC&useSSL=false&characterEncoding=utf8mb4&allowMultiQueries=true
+      username: root
+      password: root
+      hikari:
+        maximum-pool-size: 20
+        minimum-idle: 5
+        idle-timeout: 600000
+        max-lifetime: 1800000
+        connection-timeout: 30000
+        auto-commit: true
+
+    # ========== 从数据源 (DB2: 财务服务) ==========
+    secondary:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/live_finance_db?serverTimezone=UTC&useSSL=false&characterEncoding=utf8mb4&allowMultiQueries=true
+      username: root
+      password: root
+      hikari:
+        maximum-pool-size: 20
+        minimum-idle: 5
+        idle-timeout: 600000
+        max-lifetime: 1800000
+        connection-timeout: 30000
+        auto-commit: true
+
+  # ========== JPA 配置 ==========
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  # ========== MyBatis 配置 ==========
+mybatis:
+  mapper-locations: classpath:mybatis/*.xml
+  type-aliases-package: common.bean
+  configuration:
+    jdbc-type-for-null: NULL
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: true
+    default-executor-type: SIMPLE
+    default-statement-timeout: 30
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+  # ========== Flyway 数据库迁移配置 ==========
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    out-of-order: false
+    validate-on-migrate: true
+    # 是否在启动时验证SQL脚本
+    placeholders:
+      db1: live_audience_db
+      db2: live_finance_db
+
+# ========== 日志配置 ==========
+logging:
+  level:
+    root: INFO
+    com.liveroom: DEBUG
+    org.springframework.web: DEBUG
+    org.mybatis: DEBUG
+    org.hibernate: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/db-service.log
+    max-size: 100MB
+    max-history: 30
+
+# ========== 端点管理配置 ==========
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,configprops
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    env:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# ========== 自定义配置 ==========
+db:
+  # 是否在启动时自动初始化数据库
+  auto-init: true
+  # 初始化脚本位置
+  init-script-db1: sql/01-init-db1-audience-service.sql
+  init-script-db2: sql/02-init-db2-finance-service.sql
+  # 是否清空并重新初始化（危险操作）
+  recreate-on-startup: false

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/services/anchor-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/anchor-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/audience-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/audience-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/back_end-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/back_end-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/data-analysis-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/data-analysis-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/db-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/db-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/finance-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/finance-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/mock-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/mock-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/services/src/main/resources" charset="UTF-8" />
+  </component>
+</project>

@@ -1,0 +1,366 @@
+version: '3.8'
+
+# ============================================================================
+# 直播打赏系统 - Docker Compose 配置
+# 
+# 支持两种部署模式：
+# 1. 容器内置 Redis（本地 Redis）：各服务内部运行 Redis
+# 2. 中央 Redis + Redis-Service：分布式架构
+#
+# 使用说明：
+# - 启动所有服务：docker-compose up -d
+# - 启动指定服务：docker-compose up -d anchor-service
+# - 禁用服务内 Redis：docker-compose up -d -e REDIS_ENABLED=false
+# ============================================================================
+
+services:
+
+  # ==================== 数据库 ====================
+  
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db1
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./services/db-service/sql:/docker-entrypoint-initdb.d
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== Redis 配置 ====================
+  # 
+  # 共享 Redis 实例 - 用于 Redis-Service 的中心存储
+  # 各微服务有自己的本地 Redis，此实例仅用于：
+  # 1. 幂等性检查（跨服务）
+  # 2. 分布式锁（定时任务）
+  # 3. 跨服务数据共享
+  
+  shared-redis:
+    image: redis:7-alpine
+    container_name: shared-redis
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== Redis 服务 ====================
+  
+  redis-service:
+    build:
+      context: ./services/redis-service
+      dockerfile: Dockerfile
+    container_name: redis-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_APPLICATION_NAME=redis-service
+      - SPRING_PROFILES_ACTIVE=production
+      - SPRING_REDIS_HOST=shared-redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=10
+      - JAVA_OPTS=-Xms256m -Xmx256m
+    depends_on:
+      shared-redis:
+        condition: service_healthy
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/redis/api/v1/cache/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== 微服务 ====================
+  
+  # 主播服务
+  # 
+  # 包含内置 Redis（本地缓存）
+  # 可通过 REDIS_ENABLED 环境变量控制是否启用
+  anchor-service:
+    build:
+      context: ./services/anchor-service
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/anchor-service-1.0.0.jar
+    container_name: anchor-service
+    ports:
+      - "8081:8081"
+      # - "6379:6379"  # 取消注释以暴露本地 Redis 端口
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db1?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_REDIS_ENABLED=true
+      - SPRING_REDIS_HOST=localhost
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=0
+      - REDIS_ENABLED=true
+      - JAVA_OPTS=-Xms512m -Xmx512m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis-service:
+        condition: service_healthy
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/anchor/api/v1/anchor/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 观众服务
+  #
+  # 同样包含内置 Redis
+  audience-service:
+    build:
+      context: ./services/audience-service
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/audience-service-1.0.0.jar
+    container_name: audience-service
+    ports:
+      - "8082:8082"
+      # - "6380:6379"  # 取消注释以暴露本地 Redis 端口
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db1?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_REDIS_ENABLED=true
+      - SPRING_REDIS_HOST=localhost
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=1
+      - REDIS_ENABLED=true
+      - JAVA_OPTS=-Xms512m -Xmx512m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis-service:
+        condition: service_healthy
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/audience/api/v1/audience/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 财务服务
+  #
+  # 负责打赏结算、分成管理、提现处理
+  finance-service:
+    build:
+      context: ./services/finance-service
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/finance-service-1.0.0.jar
+    container_name: finance-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/live_finance_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_REDIS_HOST=shared-redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=2
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      shared-redis:
+        condition: service_healthy
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 模拟测试服务
+  #
+  # 用于生成测试数据和模拟用户行为
+  mock-service:
+    build:
+      context: ./services/mock-service
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/mock-service-1.0.0.jar
+    container_name: mock-service
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/live_mock_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      # mock-service 不强制依赖其他业务服务
+      # 可以独立启动用于测试
+      # anchor-service:
+      #   condition: service_healthy
+      # audience-service:
+      #   condition: service_healthy
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/mock/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 后端管理服务
+  #
+  # 管理后台（包含前后端一体化部署）
+  back-end-service:
+    build:
+      context: ./services/back_end-service
+      dockerfile: Dockerfile
+    container_name: back-end-service
+    ports:
+      - "8087:80"      # 前端 Web 界面
+      - "8086:8086"    # 后端 API
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/live_backend_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_REDIS_HOST=shared-redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=5
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - REDIS_HOST=shared-redis
+      - REDIS_PORT=6379
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      shared-redis:
+        condition: service_healthy
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== 网关 ====================
+  
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./services/nginx/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    # 注意：nginx 作为反向代理不强制依赖所有服务
+    # 即使某些后端服务未启动，nginx 也能正常运行
+    # 只是对应的路由会返回 502 Bad Gateway
+    # depends_on:
+    #   - redis-service
+    #   - anchor-service
+    #   - audience-service
+    #   - finance-service
+    #   - mock-service
+    #   - back-end-service
+    networks:
+      - live-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+# ==================== 数据卷 ====================
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ==================== 网络 ====================
+
+networks:
+  live-network:
+    driver: bridge
+
+# ==================== 说明 ====================
+#
+# 部署模式说明：
+#
+# 1. 本地 Redis（推荐开发环境）
+#    - 各服务内部包含 Redis
+#    - 零网络延迟
+#    - 命令：docker-compose up -d
+#
+# 2. 禁用本地 Redis（仅使用分布式锁）
+#    - 各服务禁用本地 Redis
+#    - 只通过 redis-service 调用
+#    - 命令：REDIS_ENABLED=false docker-compose up -d
+#
+# 3. 访问端口说明：
+#    - Nginx: 80
+#    - Anchor Service: 8081
+#    - Audience Service: 8082
+#    - Redis Service: 8085
+#    - Shared Redis: 6379
+#    - MySQL: 3306
+#
+# 4. 常用命令：
+#    # 启动所有服务
+#    docker-compose up -d
+#
+#    # 启动指定服务
+#    docker-compose up -d anchor-service
+#
+#    # 停止所有服务
+#    docker-compose down
+#
+#    # 查看日志
+#    docker-compose logs -f anchor-service
+#
+#    # 进入容器
+#    docker exec -it anchor-service /bin/sh
+#
+#    # 连接本地 Redis（进入 anchor-service）
+#    docker exec -it anchor-service redis-cli -p 6379
+#
+#    # 重建镜像
+#    docker-compose build --no-cache anchor-service
