@@ -1,0 +1,50 @@
+version: '3.8'
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nginx-gateway
+    ports:
+      - "80:80"
+      # - "443:443" # 如启用HTTPS
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      # - ./certs:/etc/nginx/ssl:ro # 如有证书
+      # - ./logs:/var/log/nginx # 如需持久化日志
+      # - ./dist:/usr/share/nginx/html # 如有前端静态资源
+    depends_on:
+      - anchor-service
+      - audience-service
+      - finance-service
+      - data-analysis-service
+      - redis-service
+    networks:
+      - backend
+
+  # 其他服务（示例，实际以各服务docker-compose为准）
+  anchor-service:
+    image: anchor-service:latest
+    networks:
+      - backend
+  audience-service:
+    image: audience-service:latest
+    networks:
+      - backend
+  finance-service:
+    image: finance-service:latest
+    networks:
+      - backend
+  data-analysis-service:
+    image: data-analysis-service:latest
+    networks:
+      - backend
+  redis-service:
+    image: redis-service:latest
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+

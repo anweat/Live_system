@@ -13,9 +13,9 @@
     </parent>
 
     <artifactId>data-analysis-service</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>Data Analysis Service</name>
+    <name>data-analysis-Service</name>
     <description>数据分析服务 - 财务分析、用户画像、标签热力图等</description>
 
     <dependencies>

@@ -1,5 +1,7 @@
 package common.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -7,6 +9,8 @@ import common.bean.user.Audience;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
+
 
 /**
  * 观众Repository接口
@@ -19,9 +23,25 @@ public interface AudienceRepository extends BaseRepository<Audience, Long> {
     Optional<Audience> findByUserId(Long userId);
 
     /**
+     * 按昵称查询观众
+     */
+    Optional<Audience> findByNickname(String nickname);
+
+    /**
      * 按消费等级查询观众
      */
     List<Audience> findByConsumptionLevel(Integer level);
+
+    /**
+     * 按消费等级分页查询观众
+     */
+    Page<Audience> findByConsumptionLevel(Integer level, Pageable pageable);
+
+    /**
+     * 按关键词搜索观众（分页）
+     */
+    @Query("SELECT a FROM Audience a WHERE a.nickname LIKE %:keyword% OR a.realName LIKE %:keyword%")
+    Page<Audience> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     /**
      * 按粉丝等级查询观众
@@ -54,4 +74,16 @@ public interface AudienceRepository extends BaseRepository<Audience, Long> {
      * 检查用户是否是观众
      */
     boolean existsByUserId(Long userId);
+
+    /**
+     * 按创建日期查询观众
+     */
+    @Query("SELECT a FROM Audience a WHERE DATE(a.createTime) = :date")
+    List<Audience> findByCreatedDate(@Param("date") LocalDate date);
+
+    /**
+     * 按创建日期范围查询观众
+     */
+    @Query("SELECT a FROM Audience a WHERE DATE(a.createTime) BETWEEN :startDate AND :endDate")
+    List<Audience> findByCreatedDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

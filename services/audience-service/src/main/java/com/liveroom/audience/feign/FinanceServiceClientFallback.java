@@ -16,7 +16,7 @@ public class FinanceServiceClientFallback implements FinanceServiceClient {
     @Override
     public ApiResponse<String> receiveBatchRecharges(BatchRechargeDTO batchDTO) {
         TraceLogger.error("FinanceServiceClientFallback", "receiveBatchRecharges", 
-            "财务服务调用失败，批次ID: " + batchDTO.getBatchId());
+            "财务服务调用失败，批次ID: " + batchDTO.getBatchId(), null);
 
         // 返回失败响应，触发重试机制
         return ApiResponse.error(500, "财务服务不可用");

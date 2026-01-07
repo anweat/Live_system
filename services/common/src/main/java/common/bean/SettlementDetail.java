@@ -42,8 +42,8 @@ public class SettlementDetail implements Serializable {
     private BigDecimal totalRechargeAmount;
 
     /** 本期分成比例 */
-    @Column(nullable = false)
-    private Double commissionRate;
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal commissionRate;
 
     /** 本期应付金额（总额 * 比例） */
     @Column(nullable = false, precision = 15, scale = 2)

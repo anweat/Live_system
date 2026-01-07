@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableFeignClients(basePackages = "com.liveroom.finance.feign")
 @EnableScheduling
 @EnableTransactionManagement
-@EnableJpaRepositories(basePackages = "com.liveroom.finance.repository")
+@EnableJpaRepositories(basePackages = {"com.liveroom.finance.repository", "common.repository"})
 @ComponentScan(basePackages = {"com.liveroom.finance", "common"})
 public class FinanceServiceApplication {
 

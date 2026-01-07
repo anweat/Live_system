@@ -1,5 +1,7 @@
 package common.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,22 +43,22 @@ public interface WithdrawalRepository extends BaseRepository<Withdrawal, Long> {
      */
     @Query("SELECT w FROM Withdrawal w WHERE w.appliedTime BETWEEN :startTime AND :endTime")
     List<Withdrawal> findByTimeRange(
-        @Param("startTime") LocalDateTime startTime,
-        @Param("endTime") LocalDateTime endTime
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
     );
 
     /**
      * 计算主播的总提现金额
      */
     @Query("SELECT COALESCE(SUM(w.withdrawalAmount), 0) FROM Withdrawal w " +
-           "WHERE w.anchorId = :anchorId AND w.status IN (2)")
+            "WHERE w.anchorId = :anchorId AND w.status IN (2)")
     BigDecimal sumSuccessfulWithdrawalsByAnchor(@Param("anchorId") Long anchorId);
 
     /**
      * 查询主播申请中的提现总额
      */
     @Query("SELECT COALESCE(SUM(w.withdrawalAmount), 0) FROM Withdrawal w " +
-           "WHERE w.anchorId = :anchorId AND w.status IN (0, 1)")
+            "WHERE w.anchorId = :anchorId AND w.status IN (0, 1)")
     BigDecimal sumPendingWithdrawalsByAnchor(@Param("anchorId") Long anchorId);
 
     /**
@@ -75,8 +77,32 @@ public interface WithdrawalRepository extends BaseRepository<Withdrawal, Long> {
      */
     @Query("SELECT w FROM Withdrawal w WHERE w.status = :status AND w.appliedTime BETWEEN :startTime AND :endTime")
     List<Withdrawal> findByStatusAndTimeRange(
-        @Param("status") Integer status,
-        @Param("startTime") LocalDateTime startTime,
-        @Param("endTime") LocalDateTime endTime
+            @Param("status") Integer status,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
     );
+
+    /**
+     * 按主播ID和状态查询提现记录（分页）
+     */
+    @Query("SELECT w FROM Withdrawal w WHERE w.anchorId = :anchorId " +
+            "AND (:status IS NULL OR w.status = :status) " +
+            "ORDER BY w.appliedTime DESC")
+    Page<Withdrawal> findByAnchorIdAndStatus(
+            @Param("anchorId") Long anchorId,
+            @Param("status") Integer status,
+            Pageable pageable
+    );
+
+    /**
+     * 按主播ID查询提现记录（分页，按申请时间倒序）
+     */
+    Page<Withdrawal> findByAnchorIdOrderByAppliedTimeDesc(Long anchorId, Pageable pageable);
+
+    /**
+     * 统计主播的提现总额（仅已完成的）
+     */
+    @Query("SELECT COALESCE(SUM(w.withdrawalAmount), 0) FROM Withdrawal w " +
+            "WHERE w.anchorId = :anchorId AND w.status = 2")
+    Double sumWithdrawnAmountByAnchorId(@Param("anchorId") Long anchorId);
 }

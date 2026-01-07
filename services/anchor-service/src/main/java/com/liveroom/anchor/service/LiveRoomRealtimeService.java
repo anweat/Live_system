@@ -1,11 +1,12 @@
 package com.liveroom.anchor.service;
 
-import com.liveroom.anchor.repository.LiveRoomRepository;
 import com.liveroom.anchor.vo.LiveRoomRealtimeVO;
 import common.bean.liveroom.LiveRoom;
+import common.bean.liveroom.Message;
 import common.constant.ErrorConstants;
 import common.exception.BusinessException;
 import common.logger.TraceLogger;
+import common.service.DataAccessFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,21 +23,17 @@ import java.util.concurrent.TimeUnit;
  * 处理观众进入/离开、弹幕、打赏等实时消息
  * 使用Redis缓存热点数据，定量批量更新数据库
  * 
+ * 重构说明：已改为通过 DataAccessFacade 统一访问数据库
+ *
  * @author Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 @Service
 @Slf4j
 public class LiveRoomRealtimeService {
 
     @Autowired
-    private LiveRoomRepository liveRoomRepository;
-
-    // @Autowired
-    // private LiveRoomRealtimeRepository liveRoomRealtimeRepository;
-
-    // @Autowired
-    // private MessageRepository messageRepository;
+    private DataAccessFacade dataAccessFacade;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -116,16 +112,11 @@ public class LiveRoomRealtimeService {
         // 1. 验证直播间存在且正在直播
         validateLiveRoom(liveRoomId);
 
-        // 2. 保存弹幕到message表 (TODO: 需要实现Message实体和messageRepository)
-        // Message message = new Message();
-        // message.setLiveRoomId(liveRoomId);
-        // message.setSenderId(audienceId);
-        // message.setContent(content);
-        // message.setCreateTime(LocalDateTime.now());
-        // messageRepository.save(message);
+        // 2. 保存弹幕到message表（通过DataAccessFacade）
+        Message message = dataAccessFacade.message().saveMessage(liveRoomId, audienceId, content);
 
         TraceLogger.debug("LiveRoomRealtimeService", "viewerDanmaku",
-                "弹幕已保存到数据库");
+                "弹幕已保存到数据库: messageId=" + message.getMessageId());
 
         // 3. Redis递增弹幕计数（用于定量更新live_room_realtime表）
         String messageCountKey = LIVE_ROOM_MESSAGE_COUNT_KEY + liveRoomId;
@@ -173,9 +164,11 @@ public class LiveRoomRealtimeService {
         TraceLogger.debug("LiveRoomRealtimeService", "getLiveRoomRealtimeData",
                 "查询直播间实时数据: liveRoomId=" + liveRoomId);
 
-        // 1. 查询直播间基础信息
-        LiveRoom liveRoom = liveRoomRepository.findById(liveRoomId)
-                .orElseThrow(() -> new BusinessException(ErrorConstants.RESOURCE_NOT_FOUND, "直播间不存在"));
+        // 1. 查询直播间基础信息（通过DataAccessFacade）
+        LiveRoom liveRoom = dataAccessFacade.liveRoom().getLiveRoomInfo(liveRoomId);
+        if (liveRoom == null) {
+            throw new BusinessException(ErrorConstants.RESOURCE_NOT_FOUND, "直播间不存在");
+        }
 
         // 2. 从Redis获取实时数据
         Long currentViewers = getCurrentViewers(liveRoomId);
@@ -208,8 +201,8 @@ public class LiveRoomRealtimeService {
         TraceLogger.info("LiveRoomRealtimeService", "syncRealtimeDataToDB",
                 "开始同步直播间实时数据到数据库");
 
-        // 查询所有正在直播的直播间
-        var liveRooms = liveRoomRepository.findAllLiveRooms();
+        // 查询所有正在直播的直播间（通过DataAccessFacade）
+        var liveRooms = dataAccessFacade.liveRoom().getLiveRooms();
 
         int syncCount = 0;
         for (LiveRoom liveRoom : liveRooms) {
@@ -218,7 +211,7 @@ public class LiveRoomRealtimeService {
                 syncCount++;
             } catch (Exception e) {
                 TraceLogger.error("LiveRoomRealtimeService", "syncRealtimeDataToDB",
-                        "同步直播间数据失败: liveRoomId=" + liveRoom.getLiveRoomId(), e);
+                        liveRoom.getLiveRoomId(), e);
             }
         }
 
@@ -257,24 +250,24 @@ public class LiveRoomRealtimeService {
         long rechargeCountDelta = rechargeCountObj != null ? 
             ((Number) rechargeCountObj).longValue() : 0L;
 
-        // 2. 更新live_room表（累计观看人次、累计收益）
+        // 2. 更新live_room表（累计观看人次、累计收益）通过DataAccessFacade
         if (totalViewersDelta > 0) {
-            liveRoomRepository.updateTotalViewers(liveRoomId, totalViewersDelta);
+            dataAccessFacade.liveRoom().addViewers(liveRoomId, totalViewersDelta);
         }
         if (earningsDelta.compareTo(BigDecimal.ZERO) > 0) {
-            liveRoomRepository.updateTotalEarnings(liveRoomId, earningsDelta);
+            dataAccessFacade.liveRoom().addRoomEarnings(liveRoomId, earningsDelta);
         }
 
-        // 3. 更新live_room_realtime表（弹幕数、打赏数、当前场次收益）(TODO: 需要实现liveRoomRealtimeRepository)
-        // if (messageCountDelta > 0) {
-        //     liveRoomRealtimeRepository.incrementMessageCount(liveRoomId, messageCountDelta);
-        // }
-        // if (rechargeCountDelta > 0) {
-        //     liveRoomRealtimeRepository.incrementRechargeCount(liveRoomId, rechargeCountDelta);
-        // }
-        // if (earningsDelta.compareTo(BigDecimal.ZERO) > 0) {
-        //     liveRoomRealtimeRepository.incrementCurrentRevenue(liveRoomId, earningsDelta);
-        // }
+        // 3. 更新live_room_realtime表（弹幕数、打赏数、当前场次收益）通过DataAccessFacade
+        if (messageCountDelta > 0) {
+            dataAccessFacade.liveRoomRealtime().incrementMessageCount(liveRoomId, messageCountDelta);
+        }
+        if (rechargeCountDelta > 0) {
+            dataAccessFacade.liveRoomRealtime().incrementRechargeCount(liveRoomId, rechargeCountDelta);
+        }
+        if (earningsDelta.compareTo(BigDecimal.ZERO) > 0) {
+            dataAccessFacade.liveRoomRealtime().incrementCurrentRevenue(liveRoomId, earningsDelta);
+        }
 
         // 4. 清除Redis增量计数器
         redisTemplate.delete(totalViewersKey);
@@ -293,12 +286,11 @@ public class LiveRoomRealtimeService {
      * 验证直播间存在且正在直播
      */
     private void validateLiveRoom(Long liveRoomId) {
-        Optional<LiveRoom> optional = liveRoomRepository.findById(liveRoomId);
-        if (!optional.isPresent()) {
+        LiveRoom liveRoom = dataAccessFacade.liveRoom().getLiveRoomInfo(liveRoomId);
+        if (liveRoom == null) {
             throw new BusinessException(ErrorConstants.RESOURCE_NOT_FOUND, "直播间不存在");
         }
 
-        LiveRoom liveRoom = optional.get();
         if (liveRoom.getRoomStatus() != 1) {
             throw new BusinessException(ErrorConstants.BUSINESS_ERROR, "直播间未在直播中");
         }
@@ -345,7 +337,7 @@ public class LiveRoomRealtimeService {
                 syncSingleLiveRoom(liveRoomId);
             } catch (Exception e) {
                 TraceLogger.error("LiveRoomRealtimeService", "incrementUpdateCounter",
-                        "触发批量更新失败: liveRoomId=" + liveRoomId, e);
+                        liveRoomId, e);
             }
         }
     }

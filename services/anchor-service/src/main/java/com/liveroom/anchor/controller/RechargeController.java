@@ -7,7 +7,7 @@ import common.bean.ApiResponse;
 import common.exception.ValidationException;
 import common.logger.TraceLogger;
 import common.response.BaseResponse;
-import common.util.ResponseUtil;
+import common.response.ResponseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;

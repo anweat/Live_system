@@ -50,7 +50,7 @@ public class BalanceVO implements Serializable {
     /**
      * 当前分成比例
      */
-    private Double currentCommissionRate;
+    private BigDecimal currentCommissionRate;
 
     /**
      * 账户状态：0-正常、1-冻结、2-禁提

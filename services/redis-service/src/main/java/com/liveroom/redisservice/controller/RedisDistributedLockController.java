@@ -31,7 +31,7 @@ public class RedisDistributedLockController {
             @RequestParam(defaultValue = "30000") long lockTimeout) {
         
         boolean success = lockService.tryLock(lockKey, lockValue, lockTimeout);
-        return BaseResponse.success(success, success ? "Lock acquired" : "Lock already held");
+        return BaseResponse.success(success ? "Lock acquired" : "Lock already held", success);
     }
 
     /**
@@ -47,7 +47,7 @@ public class RedisDistributedLockController {
             @RequestParam String lockValue) {
         
         boolean success = lockService.releaseLock(lockKey, lockValue);
-        return BaseResponse.success(success, success ? "Lock released" : "Lock release failed");
+        return BaseResponse.success(success ? "Lock released" : "Lock release failed", success);
     }
 
     /**
@@ -100,7 +100,7 @@ public class RedisDistributedLockController {
             @RequestParam(defaultValue = "3600") long ttl) {
         
         boolean isFirstRequest = lockService.checkIdempotency(idempotentKey, ttl);
-        return BaseResponse.success(isFirstRequest, 
-                isFirstRequest ? "First request, proceed" : "Duplicate request, reject");
+        return BaseResponse.success(
+                isFirstRequest ? "First request, proceed" : "Duplicate request, reject", isFirstRequest);
     }
 }

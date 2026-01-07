@@ -86,4 +86,12 @@ public class User implements Serializable {
     /** 更新时间 */
     @Column(nullable = false)
     private LocalDateTime updateTime;
+
+    /**
+     * 设置账户状态
+     * @param i 账户状态
+     */
+    public void setStatus(int i) {
+        this.accountStatus = i;
+    }
 }

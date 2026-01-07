@@ -51,4 +51,8 @@ public class Audience extends User implements Serializable {
     /** 等级：1-铁粉、2-银粉、3-金粉、4-超级粉丝 */
     @Column(nullable = false)
     private Integer vipLevel = 0;
+
+    public void setRealName(String realName) {
+        super.setUsername(realName);
+    }
 }

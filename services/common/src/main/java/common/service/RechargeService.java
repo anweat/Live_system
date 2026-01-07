@@ -2,6 +2,8 @@ package common.service;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +68,20 @@ public class RechargeService extends BaseService<Recharge, Long, RechargeReposit
     }
 
     /**
+     * 按主播ID分页查询打赏
+     */
+    @Transactional(readOnly = true)
+    public Page<Recharge> findByAnchorId(Long anchorId, Pageable pageable) {
+        if (anchorId == null) {
+            return Page.empty();
+        }
+        TraceLogger.info("Recharge", "findByAnchorId", 
+            String.format("分页查询主播打赏: anchorId=%d, page=%d, size=%d",
+                anchorId, pageable.getPageNumber(), pageable.getPageSize()));
+        return repository.findByAnchorId(anchorId, pageable);
+    }
+
+    /**
      * 按观众ID查询所有打赏
      */
     @Cacheable(value = "recharge::audienceId", key = "#audienceId")
@@ -76,6 +92,17 @@ public class RechargeService extends BaseService<Recharge, Long, RechargeReposit
     }
 
     /**
+     * 按观众ID分页查询打赏
+     */
+    @Transactional(readOnly = true)
+    public Page<Recharge> findByAudienceId(Long audienceId, Pageable pageable) {
+        TraceLogger.info("Recharge", "findByAudienceId", 
+            String.format("分页查询观众打赏: audienceId=%d, page=%d, size=%d",
+                audienceId, pageable.getPageNumber(), pageable.getPageSize()));
+        return repository.findByAudienceId(audienceId, pageable);
+    }
+
+    /**
      * 按直播间ID查询所有打赏
      */
     @Cacheable(value = "recharge::liveRoomId", key = "#liveRoomId")
@@ -83,6 +110,39 @@ public class RechargeService extends BaseService<Recharge, Long, RechargeReposit
     public List<Recharge> findByLiveRoomId(Long liveRoomId) {
         TraceLogger.info("Recharge", "findByLiveRoomId", "查询直播间ID: " + liveRoomId);
         return repository.findByLiveRoomId(liveRoomId);
+    }
+
+    /**
+     * 按直播间ID分页查询打赏
+     */
+    @Transactional(readOnly = true)
+    public Page<Recharge> findByLiveRoomId(Long liveRoomId, Pageable pageable) {
+        TraceLogger.info("Recharge", "findByLiveRoomId", 
+            String.format("分页查询直播间打赏: liveRoomId=%d, page=%d, size=%d",
+                liveRoomId, pageable.getPageNumber(), pageable.getPageSize()));
+        return repository.findByLiveRoomId(liveRoomId, pageable);
+    }
+
+    /**
+     * 查询主播和时间范围内的TOP打赏记录
+     */
+    @Transactional(readOnly = true)
+    public Page<Recharge> findTop10ByAnchorAndTimeRange(Long anchorId, LocalDateTime startTime, 
+                                                         LocalDateTime endTime, Pageable pageable) {
+        TraceLogger.info("Recharge", "findTop10ByAnchorAndTimeRange", 
+            String.format("查询TOP打赏: anchorId=%d, start=%s, end=%s",
+                anchorId, startTime, endTime));
+        return repository.findTop10ByAnchorAndTimeRange(anchorId, startTime, endTime, pageable);
+    }
+
+    /**
+     * 查询未同步的打赏记录
+     */
+    @Transactional(readOnly = true)
+    public List<Recharge> findUnsyncedRecharges(Pageable pageable) {
+        TraceLogger.info("Recharge", "findUnsyncedRecharges", 
+            "查询未同步打赏, size=" + pageable.getPageSize());
+        return repository.findUnsyncedRecharges(pageable);
     }
 
     /**

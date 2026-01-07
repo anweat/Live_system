@@ -32,7 +32,7 @@ public class SyncController {
     @Log("接收批量打赏数据")
     public BaseResponse<Void> receiveBatchRecharges(@Valid @RequestBody BatchRechargeDTO batchRechargeDTO) {
         syncReceiveService.receiveBatchRecharges(batchRechargeDTO);
-        return ResponseUtil.success(null, "数据接收成功", 0);
+        return ResponseUtil.success( "数据接收成功",null);
     }
 
     /**

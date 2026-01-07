@@ -1,12 +1,15 @@
 package com.liveroom.finance.service;
 
-import com.liveroom.finance.repository.RechargeRecordRepository;
 import com.liveroom.finance.vo.AnchorRevenueVO;
 import com.liveroom.finance.vo.HourlyStatisticsVO;
 import com.liveroom.finance.vo.TopAudienceVO;
+import common.exception.SystemException;
 import common.logger.TraceLogger;
+import common.repository.RechargeRecordRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -125,8 +128,9 @@ public class StatisticsService {
         }
 
         // 查询数据库
-        List<Object[]> results = rechargeRecordRepository.getTopAudiencesByAmount(
-                anchorId, startTime, endTime, topN);
+        Pageable pageable = PageRequest.of(0, topN);
+        List<Object[]> results = rechargeRecordRepository.findTopAudiencesByAnchorAndTimeRange(
+                anchorId, startTime, endTime, pageable);
 
         List<TopAudienceVO> topList = results.stream()
                 .map(row -> TopAudienceVO.builder()
@@ -188,8 +192,9 @@ public class StatisticsService {
         }
 
         // 查询数据库 - 获取所有主播的统计
+        Pageable pageable = PageRequest.of(0, topN);
         List<Object[]> results = rechargeRecordRepository.getTopAnchorsByRevenue(
-                startTime, endTime, topN);
+                startTime, endTime, pageable);
 
         List<AnchorRevenueVO> topList = new ArrayList<>();
         int rank = 1;

@@ -1,5 +1,7 @@
 package common.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,14 +28,48 @@ public interface RechargeRepository extends BaseRepository<Recharge, Long> {
     List<Recharge> findByAnchorId(Long anchorId);
 
     /**
+     * 按主播ID分页查询打赏记录
+     */
+    Page<Recharge> findByAnchorId(Long anchorId, Pageable pageable);
+
+    /**
      * 按观众ID查询所有打赏记录
      */
     List<Recharge> findByAudienceId(Long audienceId);
 
     /**
+     * 按观众ID分页查询打赏记录
+     */
+    Page<Recharge> findByAudienceId(Long audienceId, Pageable pageable);
+
+    /**
      * 按直播间ID查询所有打赏记录
      */
     List<Recharge> findByLiveRoomId(Long liveRoomId);
+
+    /**
+     * 按直播间ID分页查询打赏记录
+     */
+    Page<Recharge> findByLiveRoomId(Long liveRoomId, Pageable pageable);
+
+    /**
+     * 查询指定主播和时间范围内的TOP打赏记录
+     */
+    @Query("SELECT r FROM Recharge r WHERE r.anchorId = :anchorId " +
+           "AND r.rechargeTime BETWEEN :startTime AND :endTime " +
+           "ORDER BY r.rechargeAmount DESC")
+    Page<Recharge> findTop10ByAnchorAndTimeRange(
+        @Param("anchorId") Long anchorId,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime,
+        Pageable pageable
+    );
+
+    /**
+     * 查询未同步的打赏记录（status=0）
+     */
+    @Query("SELECT r FROM Recharge r WHERE r.status = 0 ORDER BY r.createTime ASC")
+    List<Recharge> findUnsyncedRecharges(Pageable pageable);
 
     /**
      * 按状态查询打赏记录

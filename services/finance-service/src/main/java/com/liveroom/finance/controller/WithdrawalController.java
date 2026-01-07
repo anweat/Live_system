@@ -39,7 +39,7 @@ public class WithdrawalController {
     public BaseResponse<WithdrawalDTO> applyWithdrawal(
             @Valid @RequestBody WithdrawalRequestDTO withdrawalDTO) {
         WithdrawalDTO result = withdrawalService.applyWithdrawal(withdrawalDTO);
-        return ResponseUtil.success(result, "提现申请成功", 0);
+        return ResponseUtil.success("提现申请成功",result);
     }
 
     /**
@@ -65,8 +65,8 @@ public class WithdrawalController {
 
         Page<WithdrawalDTO> pageResult = withdrawalService
                 .listWithdrawals(anchorId, status, page, size);
-        return ResponseUtil.pageSuccess(pageResult.getContent(), 
-                pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(),
+                pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -94,7 +94,7 @@ public class WithdrawalController {
             throw new ValidationException("提现ID不合法");
         }
         withdrawalService.approveWithdrawal(withdrawalId);
-        return ResponseUtil.success(null, "审核通过", 0);
+        return ResponseUtil.success( "审核通过", null);
     }
 
     /**
@@ -113,6 +113,6 @@ public class WithdrawalController {
             throw new ValidationException("拒绝原因不能为空");
         }
         withdrawalService.rejectWithdrawal(withdrawalId, reason);
-        return ResponseUtil.success(null, "已拒绝", 0);
+        return ResponseUtil.success("已拒绝", null);
     }
 }

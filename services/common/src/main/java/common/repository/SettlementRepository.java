@@ -1,10 +1,12 @@
 package common.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import common.bean.Settlement;
 
+import javax.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,9 +18,17 @@ import java.util.Optional;
 public interface SettlementRepository extends BaseRepository<Settlement, Long> {
 
     /**
-     * 按主播ID查询（一一对应）
+     * 按主播ID查询结算记录
      */
     Optional<Settlement> findByAnchorId(Long anchorId);
+
+    /**
+     * 按主播ID查询结算记录（悲观锁）
+     * 用于提现操作，防止并发问题
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Settlement s WHERE s.anchorId = :anchorId")
+    Optional<Settlement> findByAnchorIdWithLock(@Param("anchorId") Long anchorId);
 
     /**
      * 按结算状态查询

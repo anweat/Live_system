@@ -12,7 +12,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/live_audience_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/live_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: root
     hikari:
@@ -54,15 +54,19 @@ feign:
       default:
         connectTimeout: 5000
         readTimeout: 10000
+  httpclient:
+    enabled: true
 
-# Service URLs
-services:
-  anchor-service:
-    url: http://localhost:8081/anchor
-  audience-service:
-    url: http://localhost:8082/audience
-  finance-service:
-    url: http://localhost:8083/finance
+# Mock Service 配置
+service:
+  anchor:
+    url: http://localhost:8081
+  audience:
+    url: http://localhost:8082
+  finance:
+    url: http://localhost:8083
+  redis:
+    url: http://localhost:8085
 
 # Mock Service Configuration
 mock:

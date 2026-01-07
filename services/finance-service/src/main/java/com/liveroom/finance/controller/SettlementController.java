@@ -65,8 +65,8 @@ public class SettlementController {
 
         Page<SettlementDetailVO> pageResult = settlementService
                 .getSettlementDetails(anchorId, startDate, endDate, page, size);
-        return ResponseUtil.pageSuccess(pageResult.getContent(), 
-                pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(),
+                pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -80,6 +80,6 @@ public class SettlementController {
             throw new ValidationException("主播ID不合法");
         }
         // TODO: 实现手动触发结算逻辑
-        return ResponseUtil.success(null, "结算任务已触发", 0);
+        return ResponseUtil.success("结算任务已触发", null);
     }
 }

@@ -87,7 +87,7 @@ public class RedisCacheService {
      */
     public boolean delete(String key) {
         try {
-            Boolean deleted = redisTemplate.delete(key) > 0;
+            Boolean deleted = redisTemplate.delete(key);
             AppLogger.logCacheOperation("DELETE", key, deleted ? "success" : "not found");
             return deleted;
         } catch (Exception e) {

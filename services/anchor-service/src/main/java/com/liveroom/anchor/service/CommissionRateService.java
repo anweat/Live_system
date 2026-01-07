@@ -95,7 +95,7 @@ public class CommissionRateService {
             return rate != null ? rate : defaultRate;
         } catch (Exception e) {
             TraceLogger.error("CommissionRateService", "getCurrentCommissionRateWithDefault",
-                    "查询分成比例失败，使用默认值: anchorId=" + anchorId, e);
+                    anchorId, e);
             return defaultRate;
         }
     }

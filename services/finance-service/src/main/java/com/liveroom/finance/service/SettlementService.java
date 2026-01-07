@@ -1,9 +1,6 @@
 package com.liveroom.finance.service;
 
 import com.liveroom.finance.dto.BatchRechargeDTO;
-import com.liveroom.finance.repository.RechargeRecordRepository;
-import com.liveroom.finance.repository.SettlementDetailRepository;
-import com.liveroom.finance.repository.SettlementRepository;
 import com.liveroom.finance.vo.BalanceVO;
 import com.liveroom.finance.vo.SettlementDetailVO;
 import common.bean.RechargeRecord;
@@ -13,6 +10,9 @@ import common.constant.ErrorConstants;
 import common.constant.StatusConstants;
 import common.exception.BusinessException;
 import common.logger.TraceLogger;
+import common.repository.RechargeRecordRepository;
+import common.repository.SettlementDetailRepository;
+import common.repository.SettlementRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -77,8 +77,12 @@ public class SettlementService {
                 settleForAnchor(anchorId, anchorRechargeList);
             } catch (Exception e) {
                 TraceLogger.error("SettlementService", "scheduleSettlement",
-              （基于持久化的RechargeRecord）
-     */
+                         anchorId, e);
+                     }
+                 }
+             }
+
+
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "balance", key = "#anchorId")
     public void settleForAnchor(Long anchorId, List<BatchRechargeDTO.RechargeItemDTO> recharges) {
@@ -98,9 +102,9 @@ public class SettlementService {
         }
 
         // 2. 获取主播当前分成比例
-        Double commissionRate = commissionRateService.getCurrentCommissionRate(anchorId) != null
+        BigDecimal commissionRate = commissionRateService.getCurrentCommissionRate(anchorId) != null
                 ? commissionRateService.getCurrentCommissionRate(anchorId).getCommissionRate()
-                : 70.0; // 默认70%
+                : new BigDecimal("70.0"); // 默认70%
 
         // 3. 计算总金额
         BigDecimal totalAmount = unsettledRecords.stream()
@@ -109,8 +113,8 @@ public class SettlementService {
 
         // 4. 计算结算金额
         BigDecimal settlementAmount = totalAmount
-                .multiply(BigDecimal.valueOf(commissionRate))
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                .multiply(commissionRate)
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
 
         // 5. 更新或创建主播结算记录
         Settlement settlement = settlementRepository.findByAnchorId(anchorId)
@@ -136,7 +140,7 @@ public class SettlementService {
                 .settlementId(settlement.getSettlementId())
                 .anchorId(anchorId)
                 .totalRechargeAmount(totalAmount)
-                .commissionRate(BigDecimal.valueOf(commissionRate))
+                .commissionRate(commissionRate)
                 .settlementAmount(settlementAmount)
                 .settlementStartTime(unsettledRecords.stream()
                         .map(RechargeRecord::getRechargeTime)
@@ -151,10 +155,11 @@ public class SettlementService {
 
         // 7. 更新RechargeRecord的结算状态
         List<Long> recordIds = unsettledRecords.stream()
-                .map(RechargeRecord::getId)
+                .map(RechargeRecord::getRecordId)
                 .collect(Collectors.toList());
+        LocalDateTime now = LocalDateTime.now();
         rechargeRecordRepository.batchUpdateSettlementStatus(
-                recordIds, 1, BigDecimal.valueOf(commissionRate), settlementAmount, LocalDateTime.now());
+                recordIds, 1, now, commissionRate.doubleValue(), settlementAmount, now);
 
         // 8. 清除缓存
         String cacheKey = BALANCE_CACHE_KEY + anchorId;
@@ -182,10 +187,10 @@ public class SettlementService {
 
         // 2. 从数据库查询
         Settlement settlement = settlementRepository.findByAnchorId(anchorId)
-                .orElseThrow(() -> new BusinessException(ErrorConstants.PARAM_ERROR, "主播结算记录不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorConstants.SETTLEMENT_NOT_FOUND, "主播结算记录不存在"));
 
         // 3. 获取当前分成比例
-        Double currentRate = commissionRateService.getCurrentCommissionRate(anchorId) != null
+        BigDecimal currentRate = commissionRateService.getCurrentCommissionRate(anchorId) != null
                 ? commissionRateService.getCurrentCommissionRate(anchorId).getCommissionRate()
                 : null;
 
@@ -237,19 +242,19 @@ public class SettlementService {
     public void deductAvailableAmount(Long anchorId, BigDecimal amount) {
         // 使用悲观锁查询
         Settlement settlement = settlementRepository.findByAnchorIdWithLock(anchorId)
-                .orElseThrow(() -> new BusinessException(ErrorConstants.PARAM_ERROR, "主播结算记录不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorConstants.SETTLEMENT_NOT_FOUND, "主播结算记录不存在"));
 
         // 检查状态
-        if (settlement.getStatus() == StatusConstants.SettlementStatus.FROZEN) {
-            throw new BusinessException(ErrorConstants.BUSINESS_ERROR, "账户已冻结，无法提现");
+        if (settlement.getStatus() == 1) { // FROZEN
+            throw new BusinessException(ErrorConstants.INSUFFICIENT_WITHDRAWAL_BALANCE, "账户已冻结，无法提现");
         }
-        if (settlement.getStatus() == StatusConstants.SettlementStatus.FORBIDDEN) {
-            throw new BusinessException(ErrorConstants.BUSINESS_ERROR, "账户已禁止提现");
+        if (settlement.getStatus() == 2) { // FORBIDDEN
+            throw new BusinessException(ErrorConstants.OPERATION_NOT_ALLOWED, "账户已禁止提现");
         }
 
         // 检查余额
         if (settlement.getAvailableAmount().compareTo(amount) < 0) {
-            throw new BusinessException(ErrorConstants.BUSINESS_ERROR, "可提取余额不足");
+            throw new BusinessException(ErrorConstants.INSUFFICIENT_WITHDRAWAL_BALANCE, "可提取余额不足");
         }
 
         // 扣减余额
@@ -274,7 +279,7 @@ public class SettlementService {
                 .detailId(detail.getDetailId())
                 .anchorId(detail.getAnchorId())
                 .totalRechargeAmount(detail.getTotalRechargeAmount())
-                .commissionRate(detail.getCommissionRate())
+                .commissionRate(detail.getCommissionRate().doubleValue())
                 .settlementAmount(detail.getSettlementAmount())
                 .settlementStartTime(detail.getSettlementStartTime())
                 .settlementEndTime(detail.getSettlementEndTime())

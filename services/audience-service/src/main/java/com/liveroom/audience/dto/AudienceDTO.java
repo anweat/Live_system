@@ -36,15 +36,6 @@ public class AudienceDTO extends BaseDTO {
     /** 性别：0-未知、1-男、2-女 */
     private Integer gender;
 
-    /** 出生日期 */
-    private String birthDate;
-
-    /** 个人签名 */
-    @Size(max = 200, message = "签名长度不能超过200")
-    private String signature;
-
-    /** IP地理位置 */
-    private String ipLocation;
 
     /** 消费等级：0-低、1-中、2-高 */
     private Integer consumptionLevel;

@@ -1,6 +1,7 @@
 package common.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Max;
@@ -24,9 +25,15 @@ public class WithdrawalDTO extends BaseDTO {
 
     private static final long serialVersionUID = 1L;
 
+    /** 提现ID（用于查询） */
+    private Long withdrawalId;
+
     /** 主播ID */
     @NotNull(message = "主播ID不能为空")
     private Long anchorId;
+
+    /** 主播名称（用于查询） */
+    private String anchorName;
 
     /** 提现金额 */
     @NotNull(message = "提现金额不能为空")
@@ -34,30 +41,57 @@ public class WithdrawalDTO extends BaseDTO {
     @Max(value = 9999999, message = "提现金额最多为99999.99元")
     private BigDecimal amount;
 
-    /** 提现方式: ALIPAY, WECHAT, BANK_TRANSFER等 */
-    @NotBlank(message = "提现方式不能为空")
-    private String withdrawalMethod;
+    /** 提现方式：0-银行卡、1-支付宝、2-微信 */
+    private Integer withdrawalType;
+
+    /** 开户行 */
+    private String bankName;
+
+    /** 账户持有人姓名 */
+    @NotBlank(message = "账户持有人姓名不能为空")
+    private String accountHolder;
 
     /** 银行卡号或支付宝账号 */
     @NotBlank(message = "账户信息不能为空")
     private String accountNumber;
 
-    /** 账户持有人姓名 */
-    @NotBlank(message = "账户持有人姓名不能为空")
-    private String accountName;
-
     /** 身份证号（用于验证） */
-    @NotBlank(message = "身份证号不能为空")
     @Pattern(regexp = "^[0-9]{17}[0-9X]$", message = "身份证号格式不正确")
     private String idCard;
 
     /** 联系电话 */
-    @NotBlank(message = "联系电话不能为空")
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "电话号码格式不正确")
     private String phoneNumber;
 
     /** 备注信息（可选） */
     private String remark;
+
+    /** 提现申请时间 */
+    private LocalDateTime appliedTime;
+
+    /** 提现处理时间 */
+    private LocalDateTime processedTime;
+
+    /** 提现状态：0-申请中、1-处理中、2-已打款、3-失败、4-已拒绝 */
+    private Integer status;
+
+    /** 状态描述 */
+    private String statusDesc;
+
+    /** 拒绝原因 */
+    private String rejectReason;
+
+    /** 转账流水号 */
+    private String transferSerialNumber;
+
+    /** traceId (幂等性控制) */
+    private String traceId;
+
+    /** 创建时间 */
+    private LocalDateTime createTime;
+
+    /** 更新时间 */
+    private LocalDateTime updateTime;
 
     /**
      * 验证提现DTO的有效性
@@ -70,19 +104,19 @@ public class WithdrawalDTO extends BaseDTO {
                 || amount.compareTo(new BigDecimal("99999.99")) > 0) {
             return false;
         }
-        if (withdrawalMethod == null || withdrawalMethod.trim().isEmpty()) {
+        if (withdrawalType == null) {
             return false;
         }
         if (accountNumber == null || accountNumber.trim().isEmpty()) {
             return false;
         }
-        if (accountName == null || accountName.trim().isEmpty()) {
+        if (accountHolder == null || accountHolder.trim().isEmpty()) {
             return false;
         }
-        if (idCard == null || !idCard.matches("^[0-9]{17}[0-9X]$")) {
+        if (idCard != null && !idCard.matches("^[0-9]{17}[0-9X]$")) {
             return false;
         }
-        if (phoneNumber == null || !phoneNumber.matches("^1[3-9]\\d{9}$")) {
+        if (phoneNumber != null && !phoneNumber.matches("^1[3-9]\\d{9}$")) {
             return false;
         }
         return true;

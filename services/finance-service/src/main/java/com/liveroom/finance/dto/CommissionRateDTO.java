@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.*;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -45,7 +46,7 @@ public class CommissionRateDTO implements Serializable {
     @NotNull(message = "分成比例不能为空")
     @DecimalMin(value = "0.0", message = "分成比例不能小于0")
     @DecimalMax(value = "100.0", message = "分成比例不能大于100")
-    private Double commissionRate;
+    private BigDecimal commissionRate;
 
     /**
      * 生效时间

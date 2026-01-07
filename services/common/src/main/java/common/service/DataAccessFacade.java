@@ -1,9 +1,18 @@
 package common.service;
 
+import common.service.*;
+import common.service.query.RankingQueryService;
+import common.service.query.TagAnalysisQueryService;
+import common.service.query.FinancialAnalysisQueryService;
+import common.service.query.RetentionAnalysisQueryService;
+import common.service.query.HeatmapAnalysisQueryService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import common.logger.TraceLogger;
+import common.service.query.TimeSeriesQueryService;
+import common.service.query.AggregationQueryService;
+import common.service.query.SegmentationQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +44,12 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * // 结算相关操作
  * Settlement settlement = dataAccessFacade.settlement().findByAnchorId(anchorId).orElse(null);
+ *
+ * // 数据分析查询（新增）
+ * TimeSeriesData dailyData = dataAccessFacade.timeSeriesQuery().getDailyTimeSeries(...);
+ * RankingData topPayers = dataAccessFacade.rankingQuery().getTopPayersByAnchor(...);
+ * KeyMetrics metrics = dataAccessFacade.aggregationQuery().getKeyMetrics(...);
+ * ConsumptionSegmentation segments = dataAccessFacade.segmentationQuery().getConsumptionSegmentation(...);
  */
 @Slf4j
 @Service
@@ -49,6 +64,18 @@ public class DataAccessFacade {
     private final SettlementService settlementService;
     private final WithdrawalService withdrawalService;
     private final CommissionRateService commissionRateService;
+    private final SyncProgressService syncProgressService;
+    private final MessageService messageService;
+    private final LiveRoomRealtimeService liveRoomRealtimeService;
+    private final AnalysisQueryService analysisQueryService;
+    private final TimeSeriesQueryService timeSeriesQueryService;
+    private final RankingQueryService rankingQueryService;
+    private final AggregationQueryService aggregationQueryService;
+    private final SegmentationQueryService segmentationQueryService;
+    private final TagAnalysisQueryService tagAnalysisQueryService;
+    private final FinancialAnalysisQueryService financialAnalysisQueryService;
+    private final RetentionAnalysisQueryService retentionAnalysisQueryService;
+    private final HeatmapAnalysisQueryService heatmapAnalysisQueryService;
 
     /**
      * 获取用户Service
@@ -115,14 +142,119 @@ public class DataAccessFacade {
     }
 
     /**
+     * 获取同步进度Service
+     */
+    public SyncProgressService syncProgress() {
+        TraceLogger.debug("DataAccessFacade", "syncProgress", "获取同步进度Service");
+        return syncProgressService;
+    }
+
+    /**
+     * 获取弹幕消息Service
+     */
+    public MessageService message() {
+        TraceLogger.debug("DataAccessFacade", "message", "获取弹幕消息Service");
+        return messageService;
+    }
+
+    /**
+     * 获取直播间实时数据Service
+     */
+    public LiveRoomRealtimeService liveRoomRealtime() {
+        TraceLogger.debug("DataAccessFacade", "liveRoomRealtime", "获取直播间实时数据Service");
+        return liveRoomRealtimeService;
+    }
+
+    /**
+     * 获取分析查询Service（用于数据分析模块）
+     * 提供基础的数据查询能力
+     */
+    public AnalysisQueryService analysisQuery() {
+        TraceLogger.debug("DataAccessFacade", "analysisQuery", "获取分析查询Service");
+        return analysisQueryService;
+    }
+
+    /**
+     * 获取时间序列查询Service
+     * 用于处理基于时间维度的数据查询和分析
+     */
+    public TimeSeriesQueryService timeSeriesQuery() {
+        TraceLogger.debug("DataAccessFacade", "timeSeriesQuery", "获取时间序列查询Service");
+        return timeSeriesQueryService;
+    }
+
+    /**
+     * 获取排行榜查询Service
+     * 用于处理TOP排行、排序相关的数据查询
+     */
+    public RankingQueryService rankingQuery() {
+        TraceLogger.debug("DataAccessFacade", "rankingQuery", "获取排行榜查询Service");
+        return rankingQueryService;
+    }
+
+    /**
+     * 获取聚合统计查询Service
+     * 用于处理各种维度的聚合统计
+     */
+    public AggregationQueryService aggregationQuery() {
+        TraceLogger.debug("DataAccessFacade", "aggregationQuery", "获取聚合统计查询Service");
+        return aggregationQueryService;
+    }
+
+    /**
+     * 获取分段分层查询Service
+     * 用于处理数据的分段和分层分析
+     */
+    public SegmentationQueryService segmentationQuery() {
+        TraceLogger.debug("DataAccessFacade", "segmentationQuery", "获取分段分层查询Service");
+        return segmentationQueryService;
+    }
+
+    /**
+     * 获取标签分析查询Service
+     * 用于处理标签关联度、热力图等分析
+     */
+    public TagAnalysisQueryService tagAnalysisQuery() {
+        TraceLogger.debug("DataAccessFacade", "tagAnalysisQuery", "获取标签分析查询Service");
+        return tagAnalysisQueryService;
+    }
+
+    /**
+     * 获取财务分析查询Service
+     * 用于处理GMV、ARPU、ARPPU等财务指标分析
+     */
+    public FinancialAnalysisQueryService financialAnalysisQuery() {
+        TraceLogger.debug("DataAccessFacade", "financialAnalysisQuery", "获取财务分析查询Service");
+        return financialAnalysisQueryService;
+    }
+
+    /**
+     * 获取用户留存分析查询Service
+     * 用于处理留存率、流失预警等分析
+     */
+    public RetentionAnalysisQueryService retentionAnalysisQuery() {
+        TraceLogger.debug("DataAccessFacade", "retentionAnalysisQuery", "获取用户留存分析查询Service");
+        return retentionAnalysisQueryService;
+    }
+
+    /**
+     * 获取热力图分析查询Service
+     * 用于处理时段热力图、活跃度热力图等分析
+     */
+    public HeatmapAnalysisQueryService heatmapAnalysisQuery() {
+        TraceLogger.debug("DataAccessFacade", "heatmapAnalysisQuery", "获取热力图分析查询Service");
+        return heatmapAnalysisQueryService;
+    }
+
+    /**
      * 开始事务批量操作
      * 示例：使用此方法在一个事务内完成多个操作
-     * 
+     *
      * dataAccessFacade.beginBatchOperation(facade -> {
      *     // 批量创建用户
      *     List<User> users = ...;
      *     facade.user().batchSaveUsers(users);
-     *     
+     *
      *     // 批量创建观众
      *     List<Audience> audiences = ...;
      *     facade.audience().batchSaveAudience(audiences);

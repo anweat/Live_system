@@ -121,5 +121,6 @@ db:
   # 初始化脚本位置
   init-script-db1: sql/01-init-db1-audience-service.sql
   init-script-db2: sql/02-init-db2-finance-service.sql
-  # 是否清空并重新初始化（危险操作）
+  init-script-mock: sql/03-init-mock-service.sql
+  # 是否清空并重新初始化（危险操作)
   recreate-on-startup: false

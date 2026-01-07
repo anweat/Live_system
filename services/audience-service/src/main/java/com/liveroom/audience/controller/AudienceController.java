@@ -39,7 +39,7 @@ public class AudienceController {
     @Idempotent(key = "#audienceDTO.nickname", timeout = 30)
     public BaseResponse<AudienceDTO> createAudience(@Valid @RequestBody AudienceDTO audienceDTO) {
         AudienceDTO result = audienceService.createAudience(audienceDTO);
-        return ResponseUtil.success(result, "观众创建成功");
+        return ResponseUtil.success("观众创建成功",result);
     }
 
     /**
@@ -52,7 +52,7 @@ public class AudienceController {
             audienceDTO = new AudienceDTO();
         }
         AudienceDTO result = audienceService.createGuestAudience(audienceDTO);
-        return ResponseUtil.success(result, "游客观众创建成功");
+        return ResponseUtil.success("游客观众创建成功",result);
     }
 
     /**
@@ -66,7 +66,7 @@ public class AudienceController {
         }
         AudienceDTO result = audienceService.getAudience(audienceId);
         if (result == null) {
-            TraceLogger.info("观众不存在，audienceId=" + audienceId);
+            TraceLogger.info("观众不存在，audienceId=" + audienceId, null);
         }
         return ResponseUtil.success(result);
     }
@@ -87,7 +87,7 @@ public class AudienceController {
             throw new ValidationException("观众信息不能为空");
         }
         AudienceDTO result = audienceService.updateAudience(audienceId, audienceDTO);
-        return ResponseUtil.success(result, "观众信息修改成功");
+        return ResponseUtil.success("观众信息修改成功",result);
     }
 
     /**
@@ -114,7 +114,7 @@ public class AudienceController {
         if (pageResult.getContent().isEmpty()) {
             TraceLogger.info("AudienceController", "listAudiences", "查询结果为空");
         }
-        return ResponseUtil.pageSuccess(pageResult.getContent(), pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(), pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -144,7 +144,7 @@ public class AudienceController {
         if (pageResult.getContent().isEmpty()) {
             TraceLogger.info("AudienceController", "searchAudiences", "搜索无结果: " + keyword);
         }
-        return ResponseUtil.pageSuccess(pageResult.getContent(), pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(), pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -158,7 +158,7 @@ public class AudienceController {
         }
         ConsumptionStatsDTO result = audienceService.getConsumptionStats(audienceId);
         if (result == null) {
-            TraceLogger.info("观众消费统计为空，audienceId=" + audienceId);
+            TraceLogger.info("观众消费统计为空，audienceId=" + audienceId, null);
         }
         return ResponseUtil.success(result);
     }
@@ -177,8 +177,8 @@ public class AudienceController {
         if (reason != null && reason.length() > 200) {
             throw new ValidationException("禁用原因长度不能超过200");
         }
-        audienceService.disableAudience(audienceId, reason);
-        return ResponseUtil.success(null, "观众账户已禁用");
+        audienceService.disableAudience(audienceId);
+        return ResponseUtil.success( "观众账户已禁用",null);
     }
 
     /**
@@ -191,6 +191,6 @@ public class AudienceController {
             throw new ValidationException("观众ID不合法");
         }
         audienceService.enableAudience(audienceId);
-        return ResponseUtil.success(null, "观众账户已启用");
+        return ResponseUtil.success( "观众账户已启用",null);
     }
 }

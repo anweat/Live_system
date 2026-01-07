@@ -1,6 +1,7 @@
 package common.bean;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,8 +39,8 @@ public class CommissionRate implements Serializable {
     private String anchorName;
 
     /** 分成比例 (百分比) */
-    @Column(nullable = false)
-    private Double commissionRate;
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal commissionRate;
 
     /** 生效时间 */
     @Column(nullable = false)

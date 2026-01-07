@@ -3,10 +3,12 @@ package com.liveroom.redisservice.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import common.logger.AppLogger;
 
 import java.time.Duration;
+import java.util.Collections;
 
 /**
  * 分布式锁服务
@@ -62,10 +64,13 @@ public class RedisDistributedLockService {
                     "return 0 " +
                     "end";
             
+            DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
+            redisScript.setScriptText(luaScript);
+            redisScript.setResultType(Long.class);
+            
             Long result = redisTemplate.execute(
-                    redisTemplate.getConnectionFactory().getConnection()
-                            .scriptLoad(luaScript.getBytes()),
-                    java.util.Collections.singletonList(lockKey),
+                    redisScript,
+                    Collections.singletonList(lockKey),
                     lockValue
             );
             
@@ -153,7 +158,7 @@ public class RedisDistributedLockService {
      */
     public boolean forceReleaseLock(String lockKey) {
         try {
-            Boolean deleted = redisTemplate.delete(lockKey) > 0;
+            Boolean deleted = redisTemplate.delete(lockKey);
             if (deleted) {
                 AppLogger.logCacheOperation("LOCK_FORCE_RELEASED", lockKey, "forced");
             }

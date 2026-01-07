@@ -33,7 +33,7 @@ public class RedisCacheController {
             @RequestParam(defaultValue = "0") long ttl) {
         
         boolean success = cacheService.set(key, value, ttl);
-        return BaseResponse.success(success, "Cache set " + (success ? "success" : "failed"));
+        return BaseResponse.success("Cache set " + (success ? "success" : "failed"), success);
     }
 
     /**
@@ -45,7 +45,7 @@ public class RedisCacheController {
     @GetMapping("/get")
     public BaseResponse<Object> get(@RequestParam String key) {
         Object value = cacheService.get(key);
-        return BaseResponse.success(value, value != null ? "Cache hit" : "Cache miss");
+        return BaseResponse.success(value != null ? "Cache hit" : "Cache miss", value);
     }
 
     /**
@@ -140,6 +140,6 @@ public class RedisCacheController {
     @GetMapping("/health")
     public BaseResponse<Boolean> health() {
         boolean healthy = cacheService.isHealthy();
-        return BaseResponse.success(healthy, healthy ? "Redis is healthy" : "Redis is unavailable");
+        return BaseResponse.success(healthy ? "Redis is healthy" : "Redis is unavailable", healthy);
     }
 }

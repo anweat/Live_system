@@ -36,7 +36,7 @@ public class CommissionRateController {
     public BaseResponse<CommissionRateDTO> createOrUpdateCommissionRate(
             @Valid @RequestBody CommissionRateDTO dto) {
         CommissionRateDTO result = commissionRateService.createOrUpdateCommissionRate(dto);
-        return ResponseUtil.success(result, "操作成功", 0);
+        return ResponseUtil.success("操作成功",result  );
     }
 
     /**
@@ -75,7 +75,7 @@ public class CommissionRateController {
 
         Page<CommissionRateDTO> pageResult = commissionRateService
                 .getCommissionRateHistory(anchorId, page, size);
-        return ResponseUtil.pageSuccess(pageResult.getContent(), 
-                pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(),
+                pageResult.getTotalElements(), page, size));
     }
 }

@@ -6,7 +6,7 @@ import common.annotation.Log;
 import common.response.BaseResponse;
 import common.exception.ValidationException;
 import common.logger.TraceLogger;
-import common.util.ResponseUtil;
+import common.response.ResponseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -150,7 +150,7 @@ public class AnchorController {
             anchorService.updateLikeCount(anchorId, likeCountDelta);
         }
 
-        return ResponseUtil.success("统计数据更新成功");
+        return ResponseUtil.success("统计数据更新成功",null);
     }
 
     /**
@@ -173,7 +173,7 @@ public class AnchorController {
 
         anchorService.updateTotalEarnings(anchorId, amount);
 
-        return ResponseUtil.success("累计收益更新成功");
+        return ResponseUtil.success("累计收益更新成功",null);
     }
 
     /**
@@ -213,6 +213,6 @@ public class AnchorController {
 
         anchorService.updateAvailableAmount(anchorId, amount);
 
-        return ResponseUtil.success("可提取余额更新成功");
+        return ResponseUtil.success("可提取余额更新成功",null);
     }
 }

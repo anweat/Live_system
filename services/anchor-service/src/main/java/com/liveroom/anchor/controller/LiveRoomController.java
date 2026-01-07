@@ -6,7 +6,7 @@ import common.annotation.Log;
 import common.response.BaseResponse;
 import common.exception.ValidationException;
 import common.logger.TraceLogger;
-import common.util.ResponseUtil;
+import common.response.ResponseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -124,7 +124,7 @@ public class LiveRoomController {
 
         liveRoomService.updateRealtimeData(liveRoomId, viewersDelta, earningsDelta);
 
-        return ResponseUtil.success("实时数据更新成功");
+        return ResponseUtil.success("实时数据更新成功", null);
     }
 
     /**

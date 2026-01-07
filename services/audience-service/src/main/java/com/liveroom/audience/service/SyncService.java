@@ -15,13 +15,15 @@ import common.bean.SyncProgress;
 import common.constant.ErrorConstants;
 import common.exception.BusinessException;
 import common.logger.TraceLogger;
+import common.service.DataAccessFacade;
 import common.util.DateTimeUtil;
 import com.liveroom.audience.feign.FinanceServiceClient;
-import com.liveroom.audience.repository.SyncProgressRepository;
 
 /**
  * 数据同步服务
  * 管理打赏数据同步至财务服务的进度
+ *
+ * 重构说明：已改为通过 DataAccessFacade 统一访问数据库
  */
 @Service
 @Slf4j
@@ -29,7 +31,7 @@ import com.liveroom.audience.repository.SyncProgressRepository;
 public class SyncService {
 
     @Autowired
-    private SyncProgressRepository syncProgressRepository;
+    private DataAccessFacade dataAccessFacade;
 
     @Autowired
     private RechargeService rechargeService;
@@ -189,10 +191,8 @@ public class SyncService {
      * 获取同步进度
      */
     public SyncProgress getSyncProgress(String sourceService, String targetService) {
-        SyncProgress progress = syncProgressRepository.findBySourceServiceAndTargetService(sourceService, targetService);
-        if (progress == null) {
-            throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "同步进度不存在");
-        }
+        SyncProgress progress = dataAccessFacade.syncProgress().findByService(sourceService, targetService)
+                .orElseThrow(() -> new BusinessException(ErrorConstants.SYSTEM_ERROR, "同步进度不存在"));
         return progress;
     }
 }

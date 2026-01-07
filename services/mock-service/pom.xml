@@ -15,7 +15,7 @@
     <artifactId>mock-service</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>Mock Service - 模拟测试服务</name>
+    <name>mock-service</name>
     <description>模拟主播、观众、直播间和各种行为的测试服务</description>
 
     <dependencies>

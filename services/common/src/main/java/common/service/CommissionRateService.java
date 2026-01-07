@@ -10,6 +10,8 @@ import common.logger.TraceLogger;
 import common.repository.CommissionRateRepository;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +49,7 @@ public class CommissionRateService extends BaseService<CommissionRate, Long, Com
             return Optional.empty();
         }
         TraceLogger.info("CommissionRate", "findCurrentRateByAnchor", "查询主播当前分成: " + anchorId);
-        return repository.findCurrentRateByAnchor(anchorId, LocalDateTime.now());
+        return repository.findCurrentRateByAnchorId(anchorId, LocalDateTime.now());
     }
 
     /**
@@ -60,7 +62,7 @@ public class CommissionRateService extends BaseService<CommissionRate, Long, Com
             return List.of();
         }
         TraceLogger.info("CommissionRate", "findHistoryByAnchor", "查询主播分成历史: " + anchorId);
-        return repository.findByAnchorIdOrderByEffectiveTimeDesc(anchorId);
+        return repository.findByAnchorIdOrderByEffectiveTimeDesc(anchorId, Pageable.unpaged()).getContent();
     }
 
     /**

@@ -1,12 +1,11 @@
 package com.liveroom.finance.service;
 
 import com.liveroom.finance.dto.CommissionRateDTO;
-import com.liveroom.finance.repository.CommissionRateRepository;
 import common.bean.CommissionRate;
 import common.constant.ErrorConstants;
 import common.exception.BusinessException;
 import common.logger.TraceLogger;
-import common.util.BeanUtil;
+import common.repository.CommissionRateRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -18,10 +17,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * 分成比例服务
@@ -50,8 +48,10 @@ public class CommissionRateService {
                 "创建/更新分成比例，主播ID: " + dto.getAnchorId() + ", 比例: " + dto.getCommissionRate());
 
         // 1. 参数校验
-        if (dto.getCommissionRate() < 0 || dto.getCommissionRate() > 100) {
-            throw new BusinessException(ErrorConstants.PARAM_ERROR, "分成比例必须在0-100之间");
+        if (dto.getCommissionRate() == null ||
+            dto.getCommissionRate().compareTo(BigDecimal.ZERO) < 0 ||
+            dto.getCommissionRate().compareTo(new BigDecimal("100")) > 0) {
+            throw new BusinessException(ErrorConstants.INVALID_AMOUNT, "分成比例必须在0-100之间");
         }
 
         // 2. 查询当前生效的分成比例
@@ -143,7 +143,7 @@ public class CommissionRateService {
      * 查询指定时间的有效分成比例
      * 用于历史结算计算
      */
-    public Double getCommissionRateAtTime(Long anchorId, LocalDateTime time) {
+    public BigDecimal getCommissionRateAtTime(Long anchorId, LocalDateTime time) {
         CommissionRate rate = commissionRateRepository
                 .findRateAtTime(anchorId, time)
                 .orElse(null);
@@ -151,7 +151,7 @@ public class CommissionRateService {
         if (rate == null) {
             // 如果没有历史记录，返回当前比例
             CommissionRateDTO current = getCurrentCommissionRate(anchorId);
-            return current != null ? current.getCommissionRate() : 70.0; // 默认70%
+            return current != null ? current.getCommissionRate() : new BigDecimal("70.00"); // 默认70%
         }
 
         return rate.getCommissionRate();

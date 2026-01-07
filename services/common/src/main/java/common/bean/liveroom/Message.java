@@ -33,7 +33,7 @@ public class Message implements Serializable {
 
     /** 发送者 */
     @ManyToOne
-    @JoinColumn(name = "audience_id")
+    @JoinColumn(name = "sender_id")
     private Audience sender;
 
     /** 消息内容 */

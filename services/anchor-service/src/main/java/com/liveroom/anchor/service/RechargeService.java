@@ -58,7 +58,7 @@ public class RechargeService {
 
         } catch (Exception e) {
             TraceLogger.error("RechargeService", "getRechargesByAnchor",
-                    "查询主播打赏记录失败", e);
+                    null, e);
             throw new BusinessException(ErrorConstants.SERVICE_ERROR,
                     "查询打赏记录失败: " + e.getMessage());
         }
@@ -87,7 +87,7 @@ public class RechargeService {
 
         } catch (Exception e) {
             TraceLogger.error("RechargeService", "getRechargesByLiveRoom",
-                    "查询直播间打赏记录失败", e);
+                    null, e);
             throw new BusinessException(ErrorConstants.SERVICE_ERROR,
                     "查询打赏记录失败: " + e.getMessage());
         }
@@ -112,7 +112,7 @@ public class RechargeService {
 
         } catch (Exception e) {
             TraceLogger.error("RechargeService", "getRechargeByTraceId",
-                    "查询打赏记录失败", e);
+                    null, e);
             throw new BusinessException(ErrorConstants.SERVICE_ERROR,
                     "查询打赏记录失败: " + e.getMessage());
         }
@@ -135,7 +135,7 @@ public class RechargeService {
 
         } catch (Exception e) {
             TraceLogger.error("RechargeService", "getTotalRechargeByAnchor",
-                    "统计打赏总额失败", e);
+                    null, e);
             throw new BusinessException(ErrorConstants.SERVICE_ERROR,
                     "统计打赏总额失败: " + e.getMessage());
         }
@@ -178,7 +178,7 @@ public class RechargeService {
 
         } catch (Exception e) {
             TraceLogger.error("RechargeService", "getTop10Audiences",
-                    "查询TOP10打赏观众失败", e);
+                    null, e);
             throw new BusinessException(ErrorConstants.SERVICE_ERROR,
                     "查询TOP10失败: " + e.getMessage());
         }

@@ -46,4 +46,12 @@ public interface SyncProgressRepository extends BaseRepository<SyncProgress, Lon
      */
     @Query("SELECT s FROM SyncProgress s WHERE s.nextSyncTime <= :now AND s.syncStatus IN (0, 3)")
     List<SyncProgress> findSyncNeedRetry(@Param("now") LocalDateTime now);
+
+    /**
+     * 检查批次ID是否存在（幂等性检查）
+     * 注：需要在errorMessage字段中存储batchId
+     */
+    @Query("SELECT CASE WHEN COUNT(sp) > 0 THEN true ELSE false END FROM SyncProgress sp " +
+            "WHERE sp.errorMessage LIKE CONCAT('%batchId:', :batchId, '%')")
+    boolean existsByBatchId(@Param("batchId") String batchId);
 }

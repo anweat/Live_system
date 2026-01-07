@@ -24,6 +24,7 @@ public class LiveSessionAudience implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "session_audience_id")
     private Long id;
 
     /** 直播间 */

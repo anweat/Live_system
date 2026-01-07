@@ -110,14 +110,16 @@ public class StatusConstants {
     public static class WithdrawalStatus {
         /** 申请中 */
         public static final int APPLYING = 0;
-        /** 审核通过 */
-        public static final int APPROVED = 1;
+        /** 处理中 */
+        public static final Integer PROCESSING = 1;
         /** 转账中 */
         public static final int TRANSFERRING = 2;
         /** 已完成 */
         public static final int COMPLETED = 3;
         /** 已拒绝 */
         public static final int REJECTED = 4;
+
+
     }
 
     /**

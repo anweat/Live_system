@@ -2,13 +2,14 @@ package com.liveroom.finance.service;
 
 import com.liveroom.finance.config.RedisLockUtil;
 import com.liveroom.finance.dto.BatchRechargeDTO;
-import com.liveroom.finance.repository.SyncProgressRepository;
-import com.liveroom.finance.repository.RechargeRecordRepository;
 import common.bean.RechargeRecord;
 import common.bean.SyncProgress;
 import common.constant.ErrorConstants;
 import common.exception.BusinessException;
+import common.exception.SystemException;
 import common.logger.TraceLogger;
+import common.repository.RechargeRecordRepository;
+import common.repository.SyncProgressRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,7 +23,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * 数据同步接收服务
@@ -65,8 +65,8 @@ public class SyncReceiveService {
         // 1. 幂等性检查 - Redis缓存
         String cacheBatchKey = BATCH_CACHE_KEY + batchId;
         Boolean cached = redisTemplate.hasKey(cacheBatchKey);
-        if (Boolean.TRUE.equals(cached)) {
-            TraceLogger.warn("SyncReceiveService", "receiveBatchRecharges", 
+        if (cached) {
+            TraceLogger.warn("SyncReceiveService", "receiveBatchRecharges",
                     "批次已处理（Redis），batchId: " + batchId);
             return;
         }
@@ -83,7 +83,7 @@ public class SyncReceiveService {
         // 3. 获取分布式锁
         String lockKey = "sync:batch:" + batchId;
         if (!redisLockUtil.tryLock(lockKey, 300)) {
-            throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "系统繁忙，请稍后重试");
+            throw new BusinessException(ErrorConstants.SERVICE_ERROR, "系统繁忙，请稍后重试");
         }
 
         try {
@@ -172,7 +172,7 @@ public class SyncReceiveService {
         } catch (Exception e) {
             TraceLogger.error("SyncReceiveService", "receiveBatchRecharges",
                     "接收批量打赏数据失败，batchId: " + batchId, e);
-            throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "接收打赏数据失败: " + e.getMessage());
+            throw new SystemException(ErrorConstants.SYSTEM_ERROR, "接收打赏数据失败: " + e.getMessage(), e);
         } finally {
             redisLockUtil.unlock(lockKey);
         }
@@ -213,7 +213,7 @@ public class SyncReceiveService {
     public SyncProgress getSyncProgress(String sourceService) {
         return syncProgressRepository
                 .findBySourceServiceAndTargetService(sourceService, "finance-service")
-                .orElseThrow(() -> new BusinessException(ErrorConstants.SYSTEM_ERROR, "同步进度不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorConstants.SETTLEMENT_NOT_FOUND, "同步进度不存在"));
     }
 
     /**

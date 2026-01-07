@@ -39,7 +39,7 @@ public class RechargeController {
     @Idempotent(key = "#rechargeDTO.traceId", timeout = 60)
     public BaseResponse<RechargeDTO> createRecharge(@Valid @RequestBody RechargeDTO rechargeDTO) {
         RechargeDTO result = rechargeService.createRecharge(rechargeDTO);
-        return ResponseUtil.success(result, "打赏成功", 0);
+        return ResponseUtil.success("打赏成功", result);
     }
 
     /**
@@ -53,7 +53,8 @@ public class RechargeController {
         }
         RechargeDTO result = rechargeService.getRecharge(rechargeId);
         if (result == null) {
-            TraceLogger.info("打赏记录不存在，rechargeId=" + rechargeId);
+            TraceLogger.info("RechargeController", "getRecharge",
+                    "打赏记录不存在，rechargeId=" + rechargeId);
         }
         return ResponseUtil.success(result);
     }
@@ -72,7 +73,8 @@ public class RechargeController {
         }
         RechargeDTO result = rechargeService.getRechargeByTraceId(traceId);
         if (result == null) {
-            TraceLogger.info("未找到对应的打赏记录，traceId=" + traceId);
+            TraceLogger.info("RechargeController", "getRechargeByTraceId",
+                    "未找到对应的打赏记录，traceId=" + traceId);
         }
         return ResponseUtil.success(result);
     }
@@ -96,7 +98,7 @@ public class RechargeController {
             throw new ValidationException("每页大小必须在1-100之间");
         }
         Page<RechargeDTO> pageResult = rechargeService.listAnchorRecharges(anchorId, page, size);
-        return ResponseUtil.pageSuccess(pageResult.getContent(), pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(), pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -116,7 +118,7 @@ public class RechargeController {
         if (size == null || size < 1 || size > 100) {
             throw new ValidationException("每页大小必须在1-100之间");
         }        Page<RechargeDTO> pageResult = rechargeService.listAudienceRecharges(audienceId, page, size);
-        return ResponseUtil.pageSuccess(pageResult.getContent(), pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(), pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -138,7 +140,7 @@ public class RechargeController {
             throw new ValidationException("每页大小必须在1-100之间");
         }
         Page<RechargeDTO> pageResult = rechargeService.listLiveRoomRecharges(liveRoomId, page, size);
-        return ResponseUtil.pageSuccess(pageResult.getContent(), pageResult.getTotalElements(), page, size);
+        return ResponseUtil.success(PageResponse.of(pageResult.getContent(), pageResult.getTotalElements(), page, size));
     }
 
     /**
@@ -157,7 +159,8 @@ public class RechargeController {
         }
         List<Top10AudienceVO> result = rechargeService.getTop10Audiences(anchorId, period);
         if (result == null || result.isEmpty()) {
-            TraceLogger.info("主播无打赏记录，anchorId=" + anchorId + ",period=" + period);
+            TraceLogger.info("RechargeController", "getTop10Audiences",
+                    "主播无打赏记录，anchorId=" + anchorId + ",period=" + period);
         }
         return ResponseUtil.success(result);
     }
@@ -174,7 +177,8 @@ public class RechargeController {
         }
         List<RechargeDTO> result = rechargeService.listUnsyncedRecharges(limit);
         if (result == null || result.isEmpty()) {
-            TraceLogger.info("暂无待同步的打赏记录，limit=" + limit);
+            TraceLogger.info("RechargeController", "listUnsyncedRecharges",
+                    "暂无待同步的打赏记录，limit=" + limit);
         }
         return ResponseUtil.success(result);
     }
@@ -194,6 +198,6 @@ public class RechargeController {
             throw new ValidationException("结算ID不合法");
         }
         rechargeService.markRechargeAsSynced(rechargeId, settlementId);
-        return ResponseUtil.success(null, "打赏记录已标记为同步");
+        return ResponseUtil.success("打赏记录已标记为同步",null);
     }
 }

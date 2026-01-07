@@ -1,15 +1,14 @@
 package com.liveroom.anchor.service;
 
 import com.liveroom.anchor.feign.FinanceServiceClient;
-import com.liveroom.anchor.repository.AnchorRepository;
 import common.bean.user.Anchor;
 import common.constant.ErrorConstants;
 import common.exception.BusinessException;
 import common.logger.TraceLogger;
 import common.response.BaseResponse;
+import common.service.DataAccessFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,7 +27,7 @@ import java.util.UUID;
 public class WithdrawalService {
 
     @Autowired
-    private AnchorRepository anchorRepository;
+    private DataAccessFacade facade;
 
     @Autowired
     private FinanceServiceClient financeServiceClient;
@@ -50,7 +49,7 @@ public class WithdrawalService {
                         anchorId, amount, withdrawalType));
 
         // 1. 验证主播存在
-        Optional<Anchor> anchorOpt = anchorRepository.findById(anchorId);
+        Optional<Anchor> anchorOpt = facade.anchor().findByUserId(anchorId);
         if (!anchorOpt.isPresent()) {
             throw new BusinessException(ErrorConstants.RESOURCE_NOT_FOUND, "主播不存在");
         }
@@ -75,7 +74,7 @@ public class WithdrawalService {
         // 4. 检查响应
         if (response.getCode() != 0) {
             TraceLogger.error("WithdrawalService", "applyWithdrawal",
-                    "财务服务提现失败: " + response.getMessage());
+                    "财务服务提现失败: " + response.getMessage(), null);
             throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "提现失败: " + response.getMessage());
         }
 
@@ -96,7 +95,7 @@ public class WithdrawalService {
                 String.format("查询提现记录: anchorId=%d, status=%s", anchorId, status));
 
         // 验证主播存在
-        if (!anchorRepository.existsById(anchorId)) {
+        if (!facade.anchor().findByUserId(anchorId).isPresent()) {
             throw new BusinessException(ErrorConstants.RESOURCE_NOT_FOUND, "主播不存在");
         }
 
@@ -106,7 +105,7 @@ public class WithdrawalService {
 
         if (response.getCode() != 0) {
             TraceLogger.error("WithdrawalService", "listWithdrawals",
-                    "财务服务查询失败: " + response.getMessage());
+                    "财务服务查询失败: " + response.getMessage(), null);
             throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "查询失败: " + response.getMessage());
         }
 
@@ -126,7 +125,7 @@ public class WithdrawalService {
 
         if (response.getCode() != 0) {
             TraceLogger.error("WithdrawalService", "getWithdrawalByTraceId",
-                    "财务服务查询失败: " + response.getMessage());
+                    "财务服务查询失败: " + response.getMessage(), null);
             throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "查询失败: " + response.getMessage());
         }
 

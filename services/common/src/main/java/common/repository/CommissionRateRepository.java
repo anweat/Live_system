@@ -1,5 +1,7 @@
 package common.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,15 +24,27 @@ public interface CommissionRateRepository extends BaseRepository<CommissionRate,
            "AND c.status = 1 AND c.effectiveTime <= :now AND " +
            "(c.expireTime IS NULL OR c.expireTime > :now) " +
            "ORDER BY c.effectiveTime DESC LIMIT 1")
-    Optional<CommissionRate> findCurrentRateByAnchor(
+    Optional<CommissionRate> findCurrentRateByAnchorId(
         @Param("anchorId") Long anchorId,
         @Param("now") LocalDateTime now
     );
 
     /**
-     * 按主播ID查询所有分成比例历史
+     * 按主播ID查询所有分成比例历史（分页）
      */
-    List<CommissionRate> findByAnchorIdOrderByEffectiveTimeDesc(Long anchorId);
+    Page<CommissionRate> findByAnchorIdOrderByEffectiveTimeDesc(Long anchorId, Pageable pageable);
+
+    /**
+     * 按主播ID和时间查询生效的分成比例
+     */
+    @Query("SELECT c FROM CommissionRate c WHERE c.anchorId = :anchorId " +
+            "AND c.status = 1 AND c.effectiveTime <= :time " +
+            "AND (c.expireTime IS NULL OR c.expireTime > :time) " +
+            "ORDER BY c.effectiveTime DESC LIMIT 1")
+    Optional<CommissionRate> findRateAtTime(
+        @Param("anchorId") Long anchorId,
+        @Param("time") LocalDateTime time
+    );
 
     /**
      * 按状态查询分成比例

@@ -9,6 +9,8 @@ public class BusinessException extends BaseException {
 
     private static final long serialVersionUID = 1L;
 
+    private int errorCode;
+
     public BusinessException(String errorMessage) {
         super(500, errorMessage);
     }
@@ -27,5 +29,9 @@ public class BusinessException extends BaseException {
 
     public BusinessException(int errorCode, Throwable cause) {
         super(errorCode, cause);
+    }
+
+    public int getCode(){
+        return errorCode;
     }
 }

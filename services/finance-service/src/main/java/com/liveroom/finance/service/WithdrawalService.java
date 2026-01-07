@@ -2,13 +2,14 @@ package com.liveroom.finance.service;
 
 import com.liveroom.finance.config.RedisLockUtil;
 import com.liveroom.finance.dto.WithdrawalRequestDTO;
-import com.liveroom.finance.repository.WithdrawalRepository;
 import common.bean.Withdrawal;
 import common.constant.ErrorConstants;
 import common.constant.StatusConstants;
 import common.dto.WithdrawalDTO;
 import common.exception.BusinessException;
+import common.exception.SystemException;
 import common.logger.TraceLogger;
+import common.repository.WithdrawalRepository;
 import common.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,7 @@ public class WithdrawalService {
 
         // 1. 参数验证
         if (!requestDTO.validate()) {
-            throw new BusinessException(ErrorConstants.PARAM_ERROR, "提现参数校验失败");
+            throw new BusinessException(ErrorConstants.VALIDATION_FAILED, "提现参数校验失败");
         }
 
         // 2. 幂等性检查 - Redis缓存
@@ -85,7 +86,7 @@ public class WithdrawalService {
         // 4. 获取分布式锁（防止并发提现）
         String lockKey = WITHDRAWAL_LOCK_KEY + anchorId;
         if (!redisLockUtil.tryLock(lockKey, 30)) {
-            throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "系统繁忙，请稍后重试");
+            throw new BusinessException(ErrorConstants.SERVICE_ERROR, "系统繁忙，请稍后重试");
         }
 
         try {
@@ -99,10 +100,10 @@ public class WithdrawalService {
 
             // 6. 验证提现金额限制
             if (requestDTO.getAmount().compareTo(new BigDecimal("1.00")) < 0) {
-                throw new BusinessException(ErrorConstants.PARAM_ERROR, "提现金额不能小于1.00元");
+                throw new BusinessException(ErrorConstants.INVALID_AMOUNT, "提现金额不能小于1.00元");
             }
             if (requestDTO.getAmount().compareTo(new BigDecimal("99999.99")) > 0) {
-                throw new BusinessException(ErrorConstants.PARAM_ERROR, "提现金额不能超过99999.99元");
+                throw new BusinessException(ErrorConstants.WITHDRAWAL_AMOUNT_EXCEEDS_LIMIT, "提现金额不能超过99999.99元");
             }
 
             // 7. 扣减可提取金额（使用悲观锁）
@@ -115,12 +116,12 @@ public class WithdrawalService {
                     .withdrawalAmount(requestDTO.getAmount())
                     .withdrawalType(requestDTO.getWithdrawalType())
                     .bankName(requestDTO.getBankName())
-                    .bankCardEncrypted(EncryptUtil.encrypt(requestDTO.getAccountNumber()))
+                    .bankCardEncrypted(EncryptUtil.base64Encode(requestDTO.getAccountNumber()))
                     .accountHolder(requestDTO.getAccountHolder())
                     .status(StatusConstants.WithdrawalStatus.APPLYING) // 0-申请中
                     .traceId(traceId)
                     .appliedTime(LocalDateTime.now())
-                    .version(0L)
+                    .version(0)
                     .createTime(LocalDateTime.now())
                     .updateTime(LocalDateTime.now())
                     .build();
@@ -141,7 +142,7 @@ public class WithdrawalService {
         } catch (Exception e) {
             TraceLogger.error("WithdrawalService", "applyWithdrawal",
                     "提现申请失败，traceId: " + traceId, e);
-            throw new BusinessException(ErrorConstants.SYSTEM_ERROR, "提现申请失败");
+            throw new SystemException(ErrorConstants.SYSTEM_ERROR, "提现申请失败", e);
         } finally {
             redisLockUtil.unlock(lockKey);
         }
@@ -190,10 +191,10 @@ public class WithdrawalService {
     @Transactional(rollbackFor = Exception.class)
     public void approveWithdrawal(Long withdrawalId) {
         Withdrawal withdrawal = withdrawalRepository.findById(withdrawalId)
-                .orElseThrow(() -> new BusinessException(ErrorConstants.PARAM_ERROR, "提现记录不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorConstants.WITHDRAWAL_NOT_FOUND, "提现记录不存在"));
 
         if (withdrawal.getStatus() != StatusConstants.WithdrawalStatus.APPLYING) {
-            throw new BusinessException(ErrorConstants.BUSINESS_ERROR, "提现状态不正确，无法审核");
+            throw new BusinessException(ErrorConstants.WITHDRAWAL_ALREADY_EXISTS, "提现状态不正确，无法审核");
         }
 
         withdrawal.setStatus(StatusConstants.WithdrawalStatus.PROCESSING); // 1-处理中
@@ -215,10 +216,10 @@ public class WithdrawalService {
     @Transactional(rollbackFor = Exception.class)
     public void rejectWithdrawal(Long withdrawalId, String reason) {
         Withdrawal withdrawal = withdrawalRepository.findById(withdrawalId)
-                .orElseThrow(() -> new BusinessException(ErrorConstants.PARAM_ERROR, "提现记录不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorConstants.WITHDRAWAL_NOT_FOUND, "提现记录不存在"));
 
         if (withdrawal.getStatus() != StatusConstants.WithdrawalStatus.APPLYING) {
-            throw new BusinessException(ErrorConstants.BUSINESS_ERROR, "提现状态不正确，无法拒绝");
+            throw new BusinessException(ErrorConstants.WITHDRAWAL_ALREADY_EXISTS, "提现状态不正确，无法拒绝");
         }
 
         withdrawal.setStatus(StatusConstants.WithdrawalStatus.REJECTED); // 4-已拒绝
@@ -255,7 +256,7 @@ public class WithdrawalService {
                 .withdrawalId(withdrawal.getWithdrawalId())
                 .anchorId(withdrawal.getAnchorId())
                 .anchorName(withdrawal.getAnchorName())
-                .withdrawalAmount(withdrawal.getWithdrawalAmount())
+                .amount(withdrawal.getWithdrawalAmount())
                 .withdrawalType(withdrawal.getWithdrawalType())
                 .bankName(withdrawal.getBankName())
                 .accountHolder(withdrawal.getAccountHolder())
