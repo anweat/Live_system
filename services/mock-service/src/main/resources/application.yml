@@ -1,7 +1,7 @@
 server:
-  port: 8090
+  port: 8087
   servlet:
-    context-path: /mock
+    context-path: /api/v1/mock
 
 spring:
   application:
@@ -100,6 +100,40 @@ mock:
     consumption-low-rate: 60
     consumption-medium-rate: 30
     consumption-high-rate: 10
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.liveroom: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/mock-service.log
+    max-size: 10MB
+    max-history: 30
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# Actuator监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    loggers:
+      enabled: true
+  health:
+    defaults:
+      enabled: true
     # 打赏金额范围
     recharge-min: 1.0
     recharge-max: 1000.0

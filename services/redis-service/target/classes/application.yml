@@ -33,3 +33,24 @@ logging:
     name: logs/redis-service.log
     max-size: 10MB
     max-history: 30
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# Actuator监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    loggers:
+      enabled: true
+  health:
+    defaults:
+      enabled: true

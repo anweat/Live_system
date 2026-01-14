@@ -1,0 +1,23 @@
+ # 测试环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://test-mysql:3306/live_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+
+# 服务URL配置
+service:
+  anchor:
+    url: http://test-anchor-service:8081
+  audience:
+    url: http://test-audience-service:8082
+  finance:
+    url: http://test-finance-service:8083
+  redis:
+    url: http://test-redis-service:8085
+
+# 日志级别
+logging:
+  level:
+    root: INFO
+    com.liveroom: INFO

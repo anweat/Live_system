@@ -1,0 +1,12 @@
+# 测试环境配置
+spring:
+  redis:
+    host: test-redis
+    port: 6379
+    database: 10
+
+# 日志级别
+logging:
+  level:
+    root: INFO
+    com.liveroom: INFO

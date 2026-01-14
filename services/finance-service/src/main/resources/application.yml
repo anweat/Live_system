@@ -5,9 +5,9 @@ spring:
     name: finance-service
 
 server:
-  port: 8082
+  port: 8083
   servlet:
-    context-path: /
+    context-path: /finance
 
 # Logging
 logging:
